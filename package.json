@@ -1,0 +1,13 @@
+{
+  "name": "block-hs",
+  "version": "0.1.0",
+  "description": "Visual programming environment for Haskell",
+  "main": "index.js",
+  "repository": "https://github.com/fujiy00/block-hs",
+  "author": "Yuuki Fujihara",
+  "license": "BSD3",
+  "private": false,
+  "devDependencies": {
+    "webpack": "^4.1.1"
+  }
+}
