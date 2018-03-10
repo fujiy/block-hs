@@ -18,8 +18,26 @@ module.exports = {
     },
   module: {
     rules: [{
-      test: /\.(html?)$/,
+        test: /\.(html?)$/,
         use: ['html-loader']
+      }
+      ,{
+        test: /\.(css|sass|scss)$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: 'postcss-loader',
+            options: {
+              plugins: function () {return [require('precss'), require('autoprefixer')];}
+            }
+          },
+          'sass-loader',]
+      },{
+        test: /\.js$/,
+        enforce: 'post',
+        exclude: /node_modules/,
+        use: ['babel-loader']
       },
     ]
   }
