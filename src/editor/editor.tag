@@ -6,6 +6,8 @@ require('./expr.tag')
 require('./type.tag')
 require('./info.tag')
 
+import Mixin from './mixin.js'
+
 import I from 'Block.Bridge'
 
 <editor>

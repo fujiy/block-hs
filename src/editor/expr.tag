@@ -1,5 +1,6 @@
 // Expr
 
+import Mixin from './mixin.js'
 import I from 'Block.Bridge'
 
 <bind>
@@ -38,27 +39,17 @@ import I from 'Block.Bridge'
   <highlight outer={outer} hover={hover}/>
 
   <script>
+    this.mixin(Mixin.Selectable)
+
     this.expr   = opts.data.value0
     this.cons   = I.econs(this.expr)
     this.scheme = opts.data.value1
     this.spine  = opts.spine || ""
     this.outer  = opts.outer || (this.cons == 'app' && !opts.spine)
-    this.hover  = false
 
     if (this.cons == 'app' && !this.spine) {
         let es = I.appToArray(opts.data)
         this.spine = I.econs(es[0].value0)
-    }
-
-    this.root.onmouseover = e => {
-        this.hover = true
-        this.update()
-        e.stopPropagation()
-    }
-    this.root.onmouseout = e => {
-        this.hover = false
-        this.update()
-        e.stopPropagation()
     }
   </script>
 </expr>

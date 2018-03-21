@@ -28,5 +28,5 @@ import I from 'Block.Bridge'
 </type-id>
 
 <type-var class='term type'>
-  <span class='token'>{opts.data.value0}</span>
+  <span class='token'>{opts.data.value0.value0}</span>
 </type-var>
