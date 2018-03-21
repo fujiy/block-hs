@@ -3,5 +3,7 @@ node_modules/
 build/
 output/
 
+*.log
+
 .atom-build.yaml
 .psc-ide-port
