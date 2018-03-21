@@ -1,4 +1,4 @@
-require('./expr.sass')
+// Expr
 
 import I from 'Block.Bridge'
 

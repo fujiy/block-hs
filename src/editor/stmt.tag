@@ -1,4 +1,4 @@
-require('./stmt.sass')
+// Statement
 
 <statement class='card'>
   <bind-stmt data={opts.data}/>
