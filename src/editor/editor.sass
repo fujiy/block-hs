@@ -1,0 +1,163 @@
+@import 'variables'
+
+
+$text-light: $white
+
+$var-color:  $cyan-0
+$var-border: $cyan-1
+$num-color:  $blue-0
+$num-border: $blue-1
+$light-color: $white
+$hover-color: rgba(255,255,255,.8)
+
+$token-font-size: 16px
+
+$term-border-radius: 7px
+$expr-border-radius: $term-border-radius + 2px
+$expr-border: 2px solid
+
+$term-shadow:       $shadow-1
+$term-shadow-hover: $shadow-2
+$term-transition:   0.2s
+
+
+@function stud-right($c)
+  @return linear-gradient(0deg, $c 0%, $c 33%, transparent 33%, transparent 67%, $c 67%, $c 100%)
+
+@function stud-left($c)
+  @return linear-gradient(0deg, transparent 0%, transparent 33%, $c 33%, $c 67%, transparent 67%, transparent 100%)
+
+@mixin left-border-radius($r)
+  border-top-left-radius: $r
+  border-bottom-left-radius: $r
+
+@mixin right-border-radius($r)
+  border-top-right-radius: $r
+  border-bottom-right-radius: $r
+
+editor
+  height: 100vh
+  display: grid
+  grid-template-columns: 0.4fr 1fr
+  grid-template-rows: 50px 1fr 0.3fr
+
+  box-sizing: border-box
+
+  nav
+    grid-column: 1/3
+
+  .tab
+    &.sidebar
+      grid-column: 1/2
+      grid-row: 2/4
+
+    &.main
+      grid-column: 2/3
+
+  .term
+    display: inline-flex
+    position: relative
+    // z-index: 1
+    color: $text-light
+    font-size: $token-font-size
+    // padding: 2px
+    // border: $term-border
+    // border-radius: $term-border-radius
+
+  .token
+    margin: 2px 4px
+    pointer-events: auto
+
+statement
+  margin: 10px
+  padding: 5px
+
+bind-left
+  display: inline-block
+
+expr-slot
+  display: inline-flex
+  position: relative
+  // border-radius: $term-border-radius
+  // box-shadow: $term-shadow
+  // transition: $term-transition
+
+expr
+  display: inline-flex
+  position: relative
+  // border: $expr-border
+  // border-radius: $expr-border-radius
+  pointer-events: none
+  cursor: pointer
+
+  &.outer
+    >.term
+      border: $expr-border
+      border-radius: $expr-border-radius
+  &.left
+    >.term
+      @include left-border-radius($term-border-radius)
+      border-right: $expr-border
+    >highlight
+      @include left-border-radius($expr-border-radius)
+      margin-right: 0
+  &.right
+    >.term
+      @include right-border-radius($term-border-radius)
+    >highlight
+      @include right-border-radius($expr-border-radius)
+
+  >highlight
+    margin: -2px
+    &.outer
+      margin: 0
+      border-radius: $expr-border-radius
+
+
+highlight
+  display: inline-block
+  position: absolute
+  width: auto
+  height: auto
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  opacity: 0
+  border: $expr-border
+  border-color: $hover-color
+  opacity: 0
+  pointer-events: none
+  box-shadow: $light-1
+  background-color: rgba(255,255,255,0.1)
+  transition: .05s
+  &.hover
+    opacity: 1
+
+app-expr
+  font-size: 0
+  // border-radius: $term-border-radius
+  @include left-border-radius($term-border-radius)
+
+  border-right: $expr-border
+  pointer-events: auto
+
+  &.outer
+    // border-style: solid
+    // border-width: 2px
+    border: $expr-border
+    border-radius: $expr-border-radius
+    box-shadow: $term-shadow
+  // &.var
+  //   border-color: $var-border
+  // &.num
+  //   border-color: $num-border
+
+editor
+  .var, .term.var
+    background: $var-color
+    border-color: $var-border
+
+  .num, .term.num
+    background: $num-color
+    border-color: $num-border
