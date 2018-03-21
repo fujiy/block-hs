@@ -112,13 +112,6 @@ expr
     >highlight
       @include right-border-radius($expr-border-radius)
 
-  >.type-info
-    position: absolute
-    left: 0
-    top: 100%
-    &, *
-      pointer-events: none
-
   >highlight
     margin: -2px
     &.outer
@@ -152,6 +145,12 @@ type
     border: $expr-border
     border-radius: $expr-border-radius
 
+type-info
+  position: absolute
+  left: 0
+  top: 100%
+  &, *
+    pointer-events: none
 
 highlight
   display: inline-block

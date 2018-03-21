@@ -4,6 +4,7 @@ require('./editor.sass')
 require('./stmt.tag')
 require('./expr.tag')
 require('./type.tag')
+require('./info.tag')
 
 import I from 'Block.Bridge'
 

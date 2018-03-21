@@ -6,14 +6,13 @@ import I from 'Block.Bridge'
   <bind-left data={opts.data.value0}/>
   <span class='token'>=</span>
   <expr data={opts.data.value1} outer={true}/>
-
-  console.log(this.opts.data);
 </bind>
 
 <bind-left>
   <div class='term var'>
     <span class='token'>{var.value0.value0}</span>
   </div>
+
   <script>
     this.args = I.appToArray(this.opts.data)
     this.var = this.args.shift()
@@ -35,7 +34,7 @@ import I from 'Block.Bridge'
   <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
   <num-expr if={cons == 'num'} data={expr}/>
 
-  <div class='type-info' hidden={!hover}><scheme data={scheme}/></div>
+  <type-info show={hover} data={scheme}/>
   <highlight outer={outer} hover={hover}/>
 
   <script>

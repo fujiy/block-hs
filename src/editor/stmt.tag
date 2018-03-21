@@ -9,6 +9,5 @@
   <bind each={data in opts.data.value0} data={data}/>
 
   <script>
-    console.log(opts.data);
   </script>
 </bind-stmt>
