@@ -3,14 +3,18 @@
 
 $text-light: $white
 
-$var-color:  $cyan-0
-$var-border: $cyan-1
-$num-color:  $blue-0
-$num-border: $blue-1
+$var-color:   $cyan-0
+$var-border:  $cyan-1
+$num-color:   $blue-0
+$num-border:  $blue-1
+$type-color:  $light-green-0
+$type-border: $light-green-1
+
 $light-color: $white
 $hover-color: rgba(255,255,255,.8)
 
-$token-font-size: 16px
+$token-font-size:   16px
+$token-line-height: $token-font-size
 
 $term-border-radius: 7px
 $expr-border-radius: $term-border-radius + 2px
@@ -59,13 +63,14 @@ editor
     position: relative
     // z-index: 1
     color: $text-light
-    font-size: $token-font-size
     // padding: 2px
     // border: $term-border
     // border-radius: $term-border-radius
 
   .token
-    margin: 2px 4px
+    margin: 4px
+    font-size:   $token-font-size
+    line-height: $token-line-height
     pointer-events: auto
 
 statement
@@ -107,11 +112,45 @@ expr
     >highlight
       @include right-border-radius($expr-border-radius)
 
+  >.type-info
+    position: absolute
+    left: 0
+    top: 100%
+    &, *
+      pointer-events: none
+
   >highlight
     margin: -2px
     &.outer
       margin: 0
       border-radius: $expr-border-radius
+
+app-expr
+  font-size: 0
+  // border-radius: $term-border-radius
+  @include left-border-radius($term-border-radius)
+
+  border-right: $expr-border
+  pointer-events: auto
+
+  &.outer
+    // border-style: solid
+    // border-width: 2px
+    border: $expr-border
+    border-radius: $expr-border-radius
+    box-shadow: $term-shadow
+  // &.var
+  //   border-color: $var-border
+  // &.num
+  //   border-color: $num-border
+
+type
+  display: inline-flex
+  position: relative
+
+  >.term
+    border: $expr-border
+    border-radius: $expr-border-radius
 
 
 highlight
@@ -134,30 +173,13 @@ highlight
   &.hover
     opacity: 1
 
-app-expr
-  font-size: 0
-  // border-radius: $term-border-radius
-  @include left-border-radius($term-border-radius)
-
-  border-right: $expr-border
-  pointer-events: auto
-
-  &.outer
-    // border-style: solid
-    // border-width: 2px
-    border: $expr-border
-    border-radius: $expr-border-radius
-    box-shadow: $term-shadow
-  // &.var
-  //   border-color: $var-border
-  // &.num
-  //   border-color: $num-border
-
 editor
   .var, .term.var
-    background: $var-color
+    background:   $var-color
     border-color: $var-border
-
   .num, .term.num
-    background: $num-color
+    background:   $num-color
     border-color: $num-border
+  .type, .term.type
+    background:   $type-color
+    border-color: $type-border

@@ -34,13 +34,17 @@ import I from 'Block.Bridge'
   <var-expr if={cons == 'var'} data={expr}/>
   <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
   <num-expr if={cons == 'num'} data={expr}/>
+
+  <div class='type-info' hidden={!hover}><scheme data={scheme}/></div>
   <highlight outer={outer} hover={hover}/>
+
   <script>
-    this.expr = opts.data.value0
-    this.cons = I.econs(this.expr)
-    this.spine = opts.spine || ""
-    this.outer = opts.outer || (this.cons == 'app' && !opts.spine)
-    this.hover = false
+    this.expr   = opts.data.value0
+    this.cons   = I.econs(this.expr)
+    this.scheme = opts.data.value1
+    this.spine  = opts.spine || ""
+    this.outer  = opts.outer || (this.cons == 'app' && !opts.spine)
+    this.hover  = false
 
     if (this.cons == 'app' && !this.spine) {
         let es = I.appToArray(opts.data)

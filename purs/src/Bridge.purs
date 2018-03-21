@@ -31,3 +31,11 @@ econs e = case e of
     App _ _ -> "app"
     Num _   -> "num"
     Empty   -> "emp"
+
+tcons :: TypeA -> String
+tcons t = case t of
+    Id _     -> "id"
+    TVar _   -> "var"
+    TApp _ _ -> "app"
+    Arrow    -> "arrow"
+    Unknown  -> "unknown"
