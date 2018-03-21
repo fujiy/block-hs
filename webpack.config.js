@@ -1,4 +1,6 @@
 const path = require('path');
+const glob = require('glob');
+const webpack = require('webpack');
 
 module.exports = {
   mode: "development",
@@ -13,7 +15,9 @@ module.exports = {
   resolve: {
         modules: [
             path.resolve(__dirname, "src"),
-            "node_modules"
+            path.resolve(__dirname, "purs/output"),
+            "node_modules",
+            "purs/bower_components"
         ],
     },
   module: {
@@ -29,16 +33,43 @@ module.exports = {
           {
             loader: 'postcss-loader',
             options: {
-              plugins: function () {return [require('precss'), require('autoprefixer')];}
+              plugins: function () {return [require('precss'), require('autoprefixer')({ grid: false })];},
             }
           },
-          'sass-loader',]
+          {
+            loader: 'sass-loader',
+            options: {
+              // includePaths: glob.sync('./node_modules').map((d) => path.join(__dirname, d)),
+            }
+        }]
       },{
         test: /\.js$/,
         enforce: 'post',
         exclude: /node_modules/,
         use: ['babel-loader']
-      },
+      },{
+        test: /\.tag$/,
+        enforce: 'pre',
+        exclude: /node_modules/,
+        use: [{
+            loader: 'riot-tag-loader',
+            options: {
+                debug: true
+            }
+        }]
+      },{
+        test: /\.purs$/,
+        enforce: 'pre',
+        exclude: /node_modules/,
+        use: [{
+          loader: 'purs-loader',
+          options: {
+            psc: 'psc',
+            src: ['purs/bower_components/purescript-*/src/**/*.purs',
+                  'src/*.purs'],
+            }
+        }]
+      }
     ]
   }
 }
