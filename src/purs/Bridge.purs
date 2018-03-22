@@ -13,15 +13,20 @@ import Block.TypeChecker
 
 main_module :: Statements
 main_module = typeChecks prelude [BindStmt [Bind bar (epure $ Num 2)],
-                                  BindStmt [Bind foo (epure $ Var "bar")]]
+                                  BindStmt [Bind foo $ app (epure $ Var "negate") (epure $ Var "y")]]
 
 prelude :: Statements
-prelude = typeChecks [] [BindStmt [Bind (epure $ Var "one") (epure $ Num 0)]]
+prelude = typeChecks []
+    [BindStmt [Bind (epure $ Var "one") (epure $ Num 0)]] <>
+    [BindStmt [Bind (idefault (spure $ arrow (tpure $ Id "Int") (tpure $ Id "Int")) (Var "negate")) eempty],
+     BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty]]
 
 exprB = epure $ App exprA (epure $ Var "fuga")
 exprA = epure $ App (epure $ Var "hoge") (epure $ Num 0)
 bar = epure $ App (epure $ Var "bar") (epure $ Var "x")
 foo = epure $ App (epure $ Var "foo") (epure $ Var "y")
+
+app a b = epure $ App a b
 
 
 appToArray :: Expr -> Array Expr

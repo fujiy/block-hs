@@ -62,8 +62,11 @@ instance eq1ExprC :: Eq1 ExprC where
     eq1 _           _           = false
 derive instance eqBind :: Eq Bind
 
+eempty :: Expr
+eempty = idefault sempty Empty
+
 epure :: ExprA -> Expr
-epure e = Info e sempty mempty
+epure = idefault sempty
 
 operToArray :: Expr -> NonEmptyArray Expr
 operToArray = appToArray
@@ -81,6 +84,9 @@ toApp = foldl \a b -> Info (App a b) sempty mempty
 
 bindVar :: Bind -> Expr
 bindVar (Bind a _) = head $ appToArray a
+
+typeOf :: Expr -> Type
+typeOf (Info _ (Forall _ t) _) = t
 
 -- Scheme ----------------------------------------------------------------------
 
@@ -146,7 +152,8 @@ derive instance eqKind :: Eq Kind
 
 newtype Infos = Infos { errors :: Array Error }
 
-data Error = EMisMatch Type Type
+data Error = OutOfScopeVar
+           | EMisMatch Type Type
            | EOccursCheck Type Type
 
 derive instance eqInfos :: Eq Infos

@@ -50,8 +50,8 @@ infer m = do
     Tuple a s <- runStateT m {tvars: Map.empty, temp: 0}
     pure $ trace (Map.toUnfoldable s.tvars :: Array (Tuple TVar Type)) a
 
-localEnv :: forall a. String -> Scheme -> Infer a -> Infer a
-localEnv s sc = local (Map.insert s sc)
+localEnv :: forall a. Envir -> Infer a -> Infer a
+localEnv env = local ((<>) env)
 
 getBind :: String -> Infer (Maybe Scheme)
 getBind s = Map.lookup s <$> ask
@@ -97,7 +97,8 @@ inferLambda t as b = case uncons as of
         ta <- newTVarT
         tb <- newTVarT
         a' <- inferParam ta a
-        {args: bs', expr: b', infos: i} <- inferLambda tb bs b
+        {args: bs', expr: b', infos: i} <-
+            localEnv (paramVars a') $ inferLambda tb bs b
         {type: t', infos: j} <- unify t (arrow ta tb)
         pure {args: a':bs', expr: b', infos: i <> j}
     Nothing -> do
@@ -118,12 +119,18 @@ inferExpr t (Info e _ _) = case e of
                 ts <- instantiate sc
                 {type: t', infos: i} <- unify t ts
                 pure $ Info e (spure t') i
-            Nothing -> pure $ Info e (spure t) mempty
-    App a b -> pure $ Info e (spure t) mempty
+            Nothing -> traceWith "error" s $ pure $ Info e (spure t) (Infos{ errors: [OutOfScopeVar] })
+    App a b -> do
+        ta <- traceId <$> newTVarT
+        tb <- newTVarT
+        -- {type: t', infos: i} <- unify ta $ arrow tb t
+        a' <- inferExpr (arrow tb t) a
+        b' <- inferExpr tb b
+        pure $ idefault (spure t) $ App a' b'
     Num _ -> do
         {type: t', infos: i} <- unify t (tpure $ Id "Int")
         pure $ Info e (spure t') i
-    Empty -> pure $ Info e (spure t) mempty
+    Empty -> pure $ idefault (spure t) e
 
 --------------------------------------------------------------------------------
 
@@ -135,6 +142,17 @@ binds b = let Info e sc _ = bindVar b
           in case e of
               Var s -> Map.singleton s $ generalizeAll sc
               _     -> Map.empty
+
+-- extend :: forall a. String -> Scheme -> Infer a -> Infer a
+-- extend s sc m = local (Map.insert s sc) m
+
+paramVars :: Expr -> Envir
+paramVars (Info e sc _) = case e of
+    Var s -> Map.singleton s sc
+    _     -> Map.empty
+
+toScheme :: Type -> Infer Scheme
+toScheme t = pure $ spure t
 
 --------------------------------------------------------------------------------
 
@@ -170,9 +188,6 @@ evalType x@(Info t k i) = case t of
         case t' of
             Unknown -> pure x
             _       -> evalType x'
-    -- Arrow a b -> do
-    --     t' <- Arrow <$> evalType a <*> evalType b
-    --     pure $ Type t' k e
     TApp a b -> do
         t' <- TApp <$> evalType a <*> evalType b
         pure $ Info t' k i
@@ -205,34 +220,44 @@ unify a b = do
     a'@(Info ta _ _) <- deepEvalType a
     b'@(Info tb _ _) <- deepEvalType b
     case Tuple ta tb of
-        Tuple Unknown _ ->
-            pure $ {type: b, infos: mempty}
-        Tuple _ Unknown ->
-            pure {type: a, infos: mempty}
+        Tuple Unknown _ -> success b
+        Tuple _ Unknown -> success a
         Tuple (TVar x) (TVar y) | x > y -> do
             -- getCstrs x >>= addCstrs y
             assignTVar x b
-            pure {type: b, infos: mempty}
+            success b
         Tuple (TVar x) (TVar y) | x < y -> do
             -- getCstrs y >>= addCstrs x
             assignTVar y a
-            pure {type: a, infos: mempty}
+            success a
         Tuple (TVar x) _ ->
             if occursCheck x b
-            then pure {type: b, infos: mempty{ errors: [EOccursCheck a' b'] }}
+            then error b $ EOccursCheck a' b'
             else do
                 assignTVar x b
-                pure {type: b, infos: mempty}
+                success b
         Tuple _ (TVar y) ->
             if occursCheck y a
-            then pure {type: a, infos: mempty{ errors: [EOccursCheck a' b'] }}
+            then error a $ EOccursCheck a' b'
             else do
                 assignTVar y a
-                pure {type: a, infos: mempty}
-        _ -> pure {type: b, infos: mempty{ errors: [EMisMatch a' b'] }}
+                success a
+        Tuple Arrow Arrow -> success a
+        Tuple (Id xs) (Id ys) | xs == ys -> success a
+        Tuple (TApp ax ay) (TApp bx by) -> do
+            {type: tx, infos: ix} <- unify ax bx
+            {type: ty, infos: iy} <- unify ay by
+            pure {type: tpure $ TApp tx ty, infos: ix <> iy}
+        _ -> error b $ EMisMatch a' b'
   where
     occursCheck :: TVar -> Type -> Boolean
     occursCheck v t = v `elem` tvarsOf t
+
+    success :: Type -> Infer {type :: Type, infos :: Infos}
+    success t = pure {type: t, infos: mempty}
+
+    error :: Type -> Error -> Infer {type :: Type, infos :: Infos}
+    error t e = pure {type: t, infos: Infos {errors: [e]}}
 
 tvarsOf :: Type -> Array TVar
 tvarsOf (Info t _ _) = case t of
