@@ -4,14 +4,15 @@ import Prelude
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader.Class (ask, local)
 import Control.Monad.Reader (Reader, ReaderT, runReader, runReaderT)
-import Control.Monad.State (StateT, evalStateT, get, put, modify)
+import Control.Monad.State (StateT, evalStateT, runStateT, get, put, modify)
 import Data.Foldable (or)
 import Data.Traversable (sequence)
-import Data.Monoid (mempty)
+import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
-import Data.Array(unzip)
-import Data.Array.NonEmpty (uncons)
-import Data.Maybe(Maybe(..), maybe)
+import Data.Array ((:), (\\), unzip, uncons, foldr, head, toUnfoldable, elem)
+import Data.Array.NonEmpty as NE
+import Data.List as L
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map as Map
 
 
@@ -20,15 +21,16 @@ import Block.Debug
 
 --------------------------------------------------------------------------------
 
-type Interpreter = Reader Statements
+type Interpreter = Reader Envir
 -- type Envir = {binds :: Map String Scheme,
 --               classes :: Map String {class :: Constraint,
 --                                      members :: Map String {expr :: Expr, scheme :: Scheme, define :: Boolean}},
 --               instances :: Map String (Array Scheme),
 --               vars :: Map String Type}
 
-type Infer = StateT TypeEnv (ReaderT Envir Interpreter)
 type Envir = Map.Map String Scheme
+
+type Infer = StateT TypeEnv Interpreter
 type TypeEnv = {tvars :: Map.Map TVar Type, temp :: Int}
 
 -- type Unifier = StateT TypeEnv Infer
@@ -40,14 +42,16 @@ type TypeEnv = {tvars :: Map.Map TVar Type, temp :: Int}
 
 --------------------------------------------------------------------------------
 
-interpret :: forall a. Statements -> Interpreter a -> a
+interpret :: forall a. Envir -> Interpreter a -> a
 interpret = flip runReader
 
 infer :: forall a. Infer a -> Interpreter a
-infer m = runReaderT (evalStateT m {tvars: Map.empty, temp: 0}) Map.empty
+infer m = do
+    Tuple a s <- runStateT m {tvars: Map.empty, temp: 0}
+    pure $ trace (Map.toUnfoldable s.tvars :: Array (Tuple TVar Type)) a
 
-localEnv :: forall a. Envir -> Infer a -> Infer a
-localEnv env = local ((<>) env)
+localEnv :: forall a. String -> Scheme -> Infer a -> Infer a
+localEnv s sc = local (Map.insert s sc)
 
 getBind :: String -> Infer (Maybe Scheme)
 getBind s = Map.lookup s <$> ask
@@ -62,47 +66,75 @@ typeChecks lib ss =
     let Tuple ss' us =
             unzip $ map (typeCheck (lib <> ss) >>>
                          \{s: s, updated: u} -> Tuple s u) ss
-    in if or us then typeChecks lib ss' else ss'
+    in if envir ss /= envir ss' then typeChecks lib ss' else ss'
+
+        -- {old: (Map.toUnfoldable $ envir ss) :: Array (Tuple String Scheme),
+        --  new: (Map.toUnfoldable $ envir ss') :: Array (Tuple String Scheme),
+        --  updated: envir ss /= envir ss'}
 
 typeCheck :: Statements -> Statement -> {s :: Statement, updated :: Boolean}
 typeCheck ss s =
-    let s' = interpret ss $ inferStmt s
-    in  {s: s', updated: trace s' false}
+    let s' = interpret (envir ss) $ inferStmt s
+    in  {s: s', updated: (s /= s')}
 
 inferStmt :: Statement -> Interpreter Statement
 inferStmt st = case st of
-    BindStmt bs -> BindStmt <$> infer (mapM inferBind bs)
+    BindStmt bs -> BindStmt <$> infer (mapM (inferBind >=> showTypes) bs)
 
 inferBind :: Bind -> Infer Bind
 inferBind (Bind a b) = do
-    let {head: Info e _ _, tail: as} = uncons $ operToArray a
+    let {head: Info e _ _, tail: as} = NE.uncons $ operToArray a
     tv <- newTVarT
-    {args: as', expr: b'} <- inferLambda tv as b
-    pure $ Bind (appBindVar (idefault (spure tv) e) as') b'
+    {args: as', expr: b', infos: i} <- inferLambda tv as b
+    pure $ Bind (appBindVar (Info e (spure tv) i) as') b'
   where
     appBindVar :: Expr -> Array Expr -> Expr
     appBindVar = toApp
 
-inferLambda :: Type -> Array Expr -> Expr -> Infer {args :: Array Expr, expr :: Expr}
-inferLambda t as b = do
-    b' <- inferExpr t b
-    pure {args: as, expr: b'}
+inferLambda :: Type -> Array Expr -> Expr -> Infer {args :: Array Expr, expr :: Expr, infos :: Infos}
+inferLambda t as b = case uncons as of
+    Just {head: a, tail: bs} -> do
+        ta <- newTVarT
+        tb <- newTVarT
+        a' <- inferParam ta a
+        {args: bs', expr: b', infos: i} <- inferLambda tb bs b
+        {type: t', infos: j} <- unify t (arrow ta tb)
+        pure {args: a':bs', expr: b', infos: i <> j}
+    Nothing -> do
+        b' <- inferExpr t b
+        pure {args: as, expr: b', infos: mempty}
     -- case uncons as of
     --     Just {head: a, tail: as'} -> do
+
+inferParam :: Type -> Expr -> Infer Expr
+inferParam t (Info e _ _) = pure $ Info e (spure t) mempty
 
 inferExpr :: Type -> Expr -> Infer Expr
 inferExpr t (Info e _ _) = case e of
     Var s -> do
-        ms <- getVar s
-        -- case ms of
-        --     Just sc' -> do
-        --         {type: t', info: i} <- unify t td
-        pure $ Info e (spure t) mempty
+        ms <- getBind s
+        case ms of
+            Just sc -> do
+                ts <- instantiate sc
+                {type: t', infos: i} <- unify t ts
+                pure $ Info e (spure t') i
+            Nothing -> pure $ Info e (spure t) mempty
     App a b -> pure $ Info e (spure t) mempty
     Num _ -> do
         {type: t', infos: i} <- unify t (tpure $ Id "Int")
-        pure $ Info e (spure t') mempty
+        pure $ Info e (spure t') i
     Empty -> pure $ Info e (spure t) mempty
+
+--------------------------------------------------------------------------------
+
+envir :: Statements -> Envir
+envir = mconcat <<< map \(BindStmt bs) -> maybe mempty binds $ head bs
+
+binds :: Bind -> Envir
+binds b = let Info e sc _ = bindVar b
+          in case e of
+              Var s -> Map.singleton s $ generalizeAll sc
+              _     -> Map.empty
 
 --------------------------------------------------------------------------------
 
@@ -128,58 +160,107 @@ assignTVar v t = modify \r -> r {tvars = Map.insert v t r.tvars}
 getVar :: String -> Infer (Maybe Type)
 getVar s = getBind s >>= \ms -> sequence $ instantiate <$> ms
 
+tvars :: Infer (Array TVar)
+tvars = (\r -> L.toUnfoldable $ Map.keys r.tvars) <$> get
+
+evalType :: Type -> Infer Type
+evalType x@(Info t k i) = case t of
+    TVar v -> do
+        x'@(Info t' _ _) <- getTVar v
+        case t' of
+            Unknown -> pure x
+            _       -> evalType x'
+    -- Arrow a b -> do
+    --     t' <- Arrow <$> evalType a <*> evalType b
+    --     pure $ Type t' k e
+    TApp a b -> do
+        t' <- TApp <$> evalType a <*> evalType b
+        pure $ Info t' k i
+    _     -> pure x
+
+deepEvalType :: Type -> Infer Type
+deepEvalType = evalType
+
 instantiate :: Scheme -> Infer Type
-instantiate (Forall _ t) = pure t
+instantiate (Forall ts t) = do
+    vts <- mapM (\v -> Tuple v <$> newTVarT) ts
+    pure $ replace (Map.fromFoldable vts) t
+  where
+    replace :: Map.Map TVar Type -> Type -> Type
+    replace m x@(Info ta k i) = case ta of
+        TVar v   -> fromMaybe x $ Map.lookup v m
+        TApp a b -> Info (TApp (replace m a) (replace m b)) k i
+        _        -> x
+
+generalize :: Scheme -> Infer Scheme
+generalize (Forall _ t) = do
+    tvs <- (\\) (tvarsOf t) <$> tvars
+    pure $ Forall tvs t
+
+generalizeAll :: Scheme -> Scheme
+generalizeAll (Forall _ t) = Forall (tvarsOf t) t
 
 unify :: Type -> Type -> Infer {type :: Type, infos :: Infos}
-unify a b =
-    let Info ta _ _ = a
-        Info tb _ _ = b
-    in case Tuple ta tb of
-    Tuple Unknown _ ->
-        pure $ {type: b, infos: mempty}
-    Tuple _ Unknown ->
-        pure {type: a, infos: mempty}
-    Tuple (TVar x) (TVar y) | x < y -> do
-        -- getCstrs y >>= addCstrs x
-        assignTVar y a
-        pure {type: a, infos: mempty}
-    Tuple (TVar x) (TVar y) | x > y -> do
-        -- getCstrs x >>= addCstrs y
-        assignTVar x b
-        pure {type: b, infos: mempty}
-    _ -> pure {type: b, infos: mempty}
+unify a b = do
+    a'@(Info ta _ _) <- deepEvalType a
+    b'@(Info tb _ _) <- deepEvalType b
+    case Tuple ta tb of
+        Tuple Unknown _ ->
+            pure $ {type: b, infos: mempty}
+        Tuple _ Unknown ->
+            pure {type: a, infos: mempty}
+        Tuple (TVar x) (TVar y) | x > y -> do
+            -- getCstrs x >>= addCstrs y
+            assignTVar x b
+            pure {type: b, infos: mempty}
+        Tuple (TVar x) (TVar y) | x < y -> do
+            -- getCstrs y >>= addCstrs x
+            assignTVar y a
+            pure {type: a, infos: mempty}
+        Tuple (TVar x) _ ->
+            if occursCheck x b
+            then pure {type: b, infos: mempty{ errors: [EOccursCheck a' b'] }}
+            else do
+                assignTVar x b
+                pure {type: b, infos: mempty}
+        Tuple _ (TVar y) ->
+            if occursCheck y a
+            then pure {type: a, infos: mempty{ errors: [EOccursCheck a' b'] }}
+            else do
+                assignTVar y a
+                pure {type: a, infos: mempty}
+        _ -> pure {type: b, infos: mempty{ errors: [EMisMatch a' b'] }}
+  where
+    occursCheck :: TVar -> Type -> Boolean
+    occursCheck v t = v `elem` tvarsOf t
 
--- unifier :: Array Statement -> Array Statement -> Interpreter (Array Statement)
--- unifier lib ss = do
---     ss' <- mapM (inferStatement lib) ss
---     unifierGo lib ss'
---     -- pure ss'
---
--- unifierGo :: Array Statement -> Array Statement -> Interpreter (Array Statement)
--- unifierGo lib ss = do
---     ss' <- mapM (inferStatement (lib <> ss)) ss
---     if ss == ss' then pure ss'
---                  else unifierGo lib ss'
+tvarsOf :: Type -> Array TVar
+tvarsOf (Info t _ _) = case t of
+    TVar v   -> [v]
+    TApp a b -> tvarsOf a <> tvarsOf b
+    _        -> []
 
 --------------------------------------------------------------------------------
 
 showTypes :: Bind -> Infer Bind
 showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
-    where
-        goExpr :: Expr -> Infer Expr
-        goExpr (Info e sc i) = do
-            e' <- case e of
-                App a b -> App <$> goExpr a <*> goExpr b
-                _ -> pure e
-            sc' <- goScheme sc
-            pure $ Info e' sc' i
+  where
+    goExpr :: Expr -> Infer Expr
+    goExpr (Info e sc i) = do
+        e' <- case e of
+            App a b -> App <$> goExpr a <*> goExpr b
+            _ -> pure e
+        sc' <- goScheme sc
+        pure $ Info e' sc' i
 
-        goScheme :: Scheme -> Infer Scheme
-        goScheme = pure
+    goScheme :: Scheme -> Infer Scheme
+    goScheme (Forall ts t)= Forall ts <$> evalType t
 
 
 --------------------------------------------------------------------------------
 
 mapM :: forall m a b. Monad m => (a -> m b) -> Array a -> m (Array b)
 mapM f = map f >>> sequence
+
+mconcat :: forall m. Monoid m => Array m -> m
+mconcat = foldr (<>) mempty

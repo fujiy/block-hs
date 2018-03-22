@@ -5,7 +5,7 @@ import Data.Semigroup
 import Data.Eq
 import Data.Monoid
 import Data.Array (foldl)
-import Data.Array.NonEmpty (NonEmptyArray, snoc, toArray)
+import Data.Array.NonEmpty (NonEmptyArray, snoc, toArray, head)
 
 
 -- Info ------------------------------------------------------------------------
@@ -20,6 +20,8 @@ type InfoA t f = f (Info t f)
 -- derive instance eq1Info :: (Eq t, Eq1 f) => Eq1 (Info t f)
 instance eqInfo :: (Eq t, Eq1 f) => Eq (Info t f) where
     eq (Info fa ta ia) (Info fb tb ib) = eq1 fa fb && ta == tb && ia == ib
+    -- eq (Info fa ta ia) (Info fb tb ib) = eq1 fa fb
+    -- eq _ _ = true
 
 -- instance eq1Info :: (Eq t, Eq1 f) => Eq1 (Info t f) where
 --   eq1 (Info iax tx ix) (Info iay ty iy) = iax `eq1` iay && tx == ty && ix == iy
@@ -54,7 +56,7 @@ data Bind = Bind Expr Expr
 
 instance eq1ExprC :: Eq1 ExprC where
     eq1 (Var xs)    (Var ys)    = xs == ys
-    eq1 (App ax bx) (App ay by) = ax == bx && ay == by
+    eq1 (App ax bx) (App ay by) = ax == ay && bx == by
     eq1 (Num x)     (Num y)     = x == y
     eq1 Empty       Empty       = true
     eq1 _           _           = false
@@ -67,15 +69,18 @@ operToArray :: Expr -> NonEmptyArray Expr
 operToArray = appToArray
 
 appToArray :: Expr -> NonEmptyArray Expr
-appToArray (Info e t i) = case e of
+appToArray x@(Info e _ _) = case e of
     App a b -> appToArray a `snoc` b
-    _       -> pure $ Info e t i
+    _       -> pure x
 
 appToArray_ :: Expr -> Array Expr
 appToArray_ = appToArray >>> toArray
 
 toApp :: Expr -> Array Expr -> Expr
-toApp = foldl (\a b -> Info (App a b) sempty mempty)
+toApp = foldl \a b -> Info (App a b) sempty mempty
+
+bindVar :: Bind -> Expr
+bindVar (Bind a _) = head $ appToArray a
 
 -- Scheme ----------------------------------------------------------------------
 
@@ -105,7 +110,7 @@ type Constraint = Type
 instance eq1TypeC :: Eq1 TypeC where
     eq1 (Id xs)      (Id ys)      = xs == ys
     eq1 (TVar vx)    (TVar vy)    = vx == vy
-    eq1 (TApp ax bx) (TApp ay by) = ax == bx && ay == by
+    eq1 (TApp ax bx) (TApp ay by) = ax == ay && bx == by
     eq1 Arrow        Arrow        = true
     eq1 Unknown      Unknown      = true
     eq1 _            _            = false
@@ -118,8 +123,16 @@ tempty = idefault Base Unknown
 tpure :: TypeA -> Type
 tpure t = Info t Base mempty
 
-eqType :: Type -> Type -> Boolean
-eqType tx ty = tx == ty
+arrow :: Type -> Type -> Type
+arrow a b = tpure $ TApp (tpure $ TApp (tpure Arrow) a) b
+
+tappToArray :: Type -> NonEmptyArray Type
+tappToArray x@(Info t _ _) = case t of
+    TApp a b -> tappToArray a `snoc` b
+    _        -> pure x
+
+tappToArray_ :: Type -> Array Type
+tappToArray_ = tappToArray >>> toArray
 
 -- Kind ------------------------------------------------------------------------
 
@@ -131,13 +144,17 @@ derive instance eqKind :: Eq Kind
 
 -- Infos -----------------------------------------------------------------------
 
-newtype Infos = Infos { error :: Array String }
+newtype Infos = Infos { errors :: Array Error }
+
+data Error = EMisMatch Type Type
+           | EOccursCheck Type Type
 
 derive instance eqInfos :: Eq Infos
+derive instance eqError :: Eq Error
 
 instance sInfos :: Semigroup Infos where
-    append (Infos{ error: exs }) (Infos{ error: eys }) =
-        Infos{ error: exs <> eys }
+    append (Infos{ errors: exs }) (Infos{ errors: eys }) =
+        Infos{ errors: exs <> eys }
 
 instance mInfos :: Monoid Infos where
-    mempty = Infos{ error: [] }
+    mempty = Infos{ errors: [] }

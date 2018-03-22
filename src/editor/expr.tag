@@ -3,16 +3,20 @@
 import Mixin from './mixin.js'
 import I from 'Block.Bridge'
 
+// Bind ------------------------------------------------------------------------
+
 <bind>
   <bind-left data={opts.data.value0}/>
   <span class='token'>=</span>
   <expr data={opts.data.value1} outer={true}/>
 </bind>
 
-<bind-left>
-  <div class='term var'>
+<bind-left class='var'>
+  <div class='term var {args.length == 0 ?"right":""}'>
     <span class='token'>{var.value0.value0}</span>
   </div>
+  <pattern each={d, i in args} data={d} right={i == args.length - 1}/>
+
   <type-info show={hover} data={var.value1}/>
   <highlight outer={outer} hover={hover}/>
 
@@ -24,20 +28,13 @@ import I from 'Block.Bridge'
   </script>
 </bind-left>
 
-<expr-slot>
-  <var-expr if={cons == 'var'} data={expr}/>
-  <!-- <app-expr if={cons == 'app'} data={expr}/> -->
-  <lit-expr if={cons == 'lit'} data={expr}/>
-  <script>
-    this.expr = opts.data.value0
-    this.cons = I.econs(this.expr)
-  </script>
-</expr-slot>
+// Expr ------------------------------------------------------------------------
 
 <expr class={left: opts.left, right: opts.right, outer: outer}>
   <var-expr if={cons == 'var'} data={expr}/>
   <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
   <num-expr if={cons == 'num'} data={expr}/>
+  <type     if={cons == 'emp'} data={scheme.value1}/>
 
   <type-info show={hover} data={scheme}/>
   <highlight outer={outer} hover={hover}/>
@@ -75,14 +72,23 @@ import I from 'Block.Bridge'
   <span class='token'>{opts.data.value0}</span>
 </num-expr>
 
-<stud-left class='{cons}'>
-  <script>
-    this.cons = I.econs(this.opts.data)
-  </script>
-</stud-left>
+// Pattern ---------------------------------------------------------------------
 
-<stud-right class='{cons}'>
-<script>
-  this.cons = I.econs(this.opts.data)
-</script>
-</stud-right>
+<pattern class={right: opts.right}>
+  <var-pattern if={cons == 'var'} data={expr}/>
+
+  <type-info show={hover} data={scheme}/>
+  <highlight hover={hover}/>
+
+  <script>
+    this.mixin(Mixin.Selectable)
+
+    this.expr   = opts.data.value0
+    this.cons   = I.econs(this.expr)
+    this.scheme = opts.data.value1
+  </script>
+</pattern>
+
+<var-pattern class='term var'>
+  <span class='token'>{opts.data.value0}</span>
+</var-pattern>

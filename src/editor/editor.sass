@@ -2,13 +2,15 @@
 
 
 $text-light: $white
+$text-gray:  $gray-1
 
-$var-color:   $cyan-0
-$var-border:  $cyan-1
-$num-color:   $blue-0
-$num-border:  $blue-1
-$type-color:  $light-green-0
-$type-border: $light-green-1
+$var-color:    $cyan-0
+$var-border:   $cyan-1
+$num-color:    $blue-0
+$num-border:   $blue-1
+$type-color:   $light-green-0
+$type-border:  $light-green-1
+$empty-border: $gray-1
 
 $light-color: $white
 $hover-color: rgba(255,255,255,.8)
@@ -80,10 +82,18 @@ statement
 bind-left
   display:  inline-flex
   position: relative
+  border: $expr-border
+  border-radius: $expr-border-radius
   >.term
-    border:        $expr-border
-    border-radius: $expr-border-radius
+    @include left-border-radius($term-border-radius)
+    border-right: $expr-border
+    &.right
+      @include right-border-radius($term-border-radius)
+      border-right: none
+    // border:        $expr-border
+    // border-radius: $expr-border-radius
   >highlight
+    margin: -2px
     border-radius: $expr-border-radius
 
 expr-slot
@@ -93,13 +103,21 @@ expr-slot
   // box-shadow: $term-shadow
   // transition: $term-transition
 
-expr
+expr, pattern
   display: inline-flex
   position: relative
   // border: $expr-border
   // border-radius: $expr-border-radius
   pointer-events: none
   cursor: pointer
+
+  >type
+    >.term.type
+      border-color: $empty-border
+      color: $text-gray
+      background: transparent
+    *
+      background: transparent
 
   &.outer
     >.term
@@ -155,6 +173,7 @@ type-info
   position: absolute
   left: 0
   top: 100%
+  z-index: 100
   &, *
     pointer-events: none
 
