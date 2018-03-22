@@ -1,7 +1,16 @@
 .DS_Store
 node_modules/
 build/
-output/
+
+/bower_components/
+/node_modules/
+/.pulp-cache/
+/output/
+/generated-docs/
+/.psc*
+/.purs*
+/.psa*
+
 
 *.log
 

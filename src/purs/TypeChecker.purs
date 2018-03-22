@@ -4,7 +4,7 @@ import Prelude
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader.Class (ask, local)
 import Control.Monad.Reader (Reader, ReaderT, runReader, runReaderT)
-import Control.Monad.State (StateT, evalStateT, get, put)
+import Control.Monad.State (StateT, evalStateT, get, put, modify)
 import Data.Foldable (or)
 import Data.Traversable (sequence)
 import Data.Monoid (mempty)
@@ -29,7 +29,7 @@ type Interpreter = Reader Statements
 
 type Infer = StateT TypeEnv (ReaderT Envir Interpreter)
 type Envir = Map.Map String Scheme
-type TypeEnv = {tvars :: Map.Map TVar Scheme, temp :: Int}
+type TypeEnv = {tvars :: Map.Map TVar Type, temp :: Int}
 
 -- type Unifier = StateT TypeEnv Infer
 
@@ -54,17 +54,6 @@ getBind s = Map.lookup s <$> ask
 
 -- newTVarT :: Infer Type
 -- newTVarT = (\s -> Type (TVar s) Base []) <$> newTVarS
-
-newTVarT :: Infer Type
-newTVarT = TVar >>> tpure <$> newTVar
-
-newTVar :: Infer TVar
-newTVar = do
-    r <- get
-    let s = Temp r.temp
-    put $ r {tvars = Map.insert s (spure $ tempty) r.tvars,
-             temp = r.temp + 1}
-    pure s
 
 --------------------------------------------------------------------------------
 
@@ -117,6 +106,25 @@ inferExpr t (Info e _ _) = case e of
 
 --------------------------------------------------------------------------------
 
+newTVarT :: Infer Type
+newTVarT = TVar >>> tpure <$> newTVar
+
+newTVar :: Infer TVar
+newTVar = do
+    r <- get
+    let s = Temp r.temp
+    put $ r {tvars = Map.insert s tempty r.tvars,
+             temp = r.temp + 1}
+    pure s
+
+getTVar :: TVar -> Infer Type
+getTVar v = do
+    r <- get
+    pure $ maybe tempty id (Map.lookup v r.tvars)
+
+assignTVar :: TVar -> Type -> Infer Unit
+assignTVar v t = modify \r -> r {tvars = Map.insert v t r.tvars}
+
 getVar :: String -> Infer (Maybe Type)
 getVar s = getBind s >>= \ms -> sequence $ instantiate <$> ms
 
@@ -129,9 +137,17 @@ unify a b =
         Info tb _ _ = b
     in case Tuple ta tb of
     Tuple Unknown _ ->
-        pure {type: b, infos: mempty}
+        pure $ {type: b, infos: mempty}
     Tuple _ Unknown ->
         pure {type: a, infos: mempty}
+    Tuple (TVar x) (TVar y) | x < y -> do
+        -- getCstrs y >>= addCstrs x
+        assignTVar y a
+        pure {type: a, infos: mempty}
+    Tuple (TVar x) (TVar y) | x > y -> do
+        -- getCstrs x >>= addCstrs y
+        assignTVar x b
+        pure {type: b, infos: mempty}
     _ -> pure {type: b, infos: mempty}
 
 -- unifier :: Array Statement -> Array Statement -> Interpreter (Array Statement)
@@ -145,6 +161,23 @@ unify a b =
 --     ss' <- mapM (inferStatement (lib <> ss)) ss
 --     if ss == ss' then pure ss'
 --                  else unifierGo lib ss'
+
+--------------------------------------------------------------------------------
+
+showTypes :: Bind -> Infer Bind
+showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
+    where
+        goExpr :: Expr -> Infer Expr
+        goExpr (Info e sc i) = do
+            e' <- case e of
+                App a b -> App <$> goExpr a <*> goExpr b
+                _ -> pure e
+            sc' <- goScheme sc
+            pure $ Info e' sc' i
+
+        goScheme :: Scheme -> Infer Scheme
+        goScheme = pure
+
 
 --------------------------------------------------------------------------------
 

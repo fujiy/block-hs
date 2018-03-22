@@ -15,9 +15,9 @@ module.exports = {
   resolve: {
         modules: [
             path.resolve(__dirname, "src"),
-            path.resolve(__dirname, "purs/output"),
+            path.resolve(__dirname, "output"),
             "node_modules",
-            "purs/bower_components"
+            "bower_components"
         ],
     },
   module: {
@@ -65,8 +65,8 @@ module.exports = {
           loader: 'purs-loader',
           options: {
             psc: 'psc',
-            src: ['purs/bower_components/purescript-*/src/**/*.purs',
-                  'src/*.purs'],
+            src: ['bower_components/purescript-*/src/**/*.purs',
+                  'src/purs/*.purs'],
             }
         }]
       }

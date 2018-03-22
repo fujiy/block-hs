@@ -78,7 +78,13 @@ statement
   padding: 5px
 
 bind-left
-  display: inline-block
+  display:  inline-flex
+  position: relative
+  >.term
+    border:        $expr-border
+    border-radius: $expr-border-radius
+  >highlight
+    border-radius: $expr-border-radius
 
 expr-slot
   display: inline-flex

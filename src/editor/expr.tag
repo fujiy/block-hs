@@ -13,8 +13,12 @@ import I from 'Block.Bridge'
   <div class='term var'>
     <span class='token'>{var.value0.value0}</span>
   </div>
+  <type-info show={hover} data={var.value1}/>
+  <highlight outer={outer} hover={hover}/>
 
   <script>
+    this.mixin(Mixin.Selectable)
+
     this.args = I.appToArray(this.opts.data)
     this.var = this.args.shift()
   </script>
