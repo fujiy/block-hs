@@ -5,7 +5,7 @@ import Data.Semigroup
 import Data.Eq
 import Data.Monoid
 import Data.Array (foldl)
-import Data.Array.NonEmpty (NonEmptyArray, snoc, toArray, head)
+import Data.Array.NonEmpty (NonEmptyArray, snoc, cons, toArray, head)
 
 
 -- Info ------------------------------------------------------------------------
@@ -139,6 +139,15 @@ tappToArray x@(Info t _ _) = case t of
 
 tappToArray_ :: Type -> Array Type
 tappToArray_ = tappToArray >>> toArray
+
+arrowToArray :: Type -> NonEmptyArray Type
+arrowToArray x@(Info t _ _) = case t of
+    TApp (Info (TApp (Info Arrow _ _) a) _ _) b
+        -> a `cons` arrowToArray b
+    _   -> pure x
+
+arrowToArray_ :: Type -> Array Type
+arrowToArray_ = arrowToArray >>> toArray
 
 -- Kind ------------------------------------------------------------------------
 

@@ -6,9 +6,16 @@ import I from 'Block.Bridge'
 // Bind ------------------------------------------------------------------------
 
 <bind>
-  <bind-left data={opts.data.value0}/>
+  <bind-left data={data.value0}/>
   <span class='token'>=</span>
-  <expr data={opts.data.value1} outer={true}/>
+  <expr data={data.value1} outer={true}/>
+
+  <script>
+    this.mixin(Mixin.Data)
+    this.onrenew = d => {
+        this.renew(I.renewRight(d)(this.data))
+    }
+  </script>
 </bind>
 
 <bind-left class='var'>
@@ -30,46 +37,87 @@ import I from 'Block.Bridge'
 
 // Expr ------------------------------------------------------------------------
 
-<expr class={left: opts.left, right: opts.right, outer: outer}>
-  <var-expr if={cons == 'var'} data={expr}/>
-  <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
-  <num-expr if={cons == 'num'} data={expr}/>
-  <type     if={cons == 'emp'} data={scheme.value1}/>
+<expr class={left: opts.left, right: opts.right, outer: outer, func: func}>
+  <div ref='slot' class='slot'>
+    <expr-emp if={cons == 'emp'} data={scheme.value1}/>
+    <var-expr if={cons == 'var'} data={expr}/>
+    <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
+    <num-expr if={cons == 'num'} data={expr}/>
+  </div>
+  <hole if={outer && func} spine={spine} each={t, i in holes} data={t} right={i == holes.length - 1}/>
 
   <type-info show={hover} data={scheme}/>
   <highlight outer={outer} hover={hover}/>
 
   <script>
+    this.mixin(Mixin.Data)
     this.mixin(Mixin.Selectable)
+    this.mixin(Mixin.Draggable)
 
-    this.expr   = opts.data.value0
+    this.expr   = this.data.value0
     this.cons   = I.econs(this.expr)
-    this.scheme = opts.data.value1
-    this.spine  = opts.spine || ""
+    this.scheme = this.data.value1
     this.outer  = opts.outer || (this.cons == 'app' && !opts.spine)
+    this.spine  = opts.spine || I.econs(I.appToArray(this.data)[0].value0)
+    this.holes  = I.arrowToArray(this.scheme.value1)
+    this.holes.pop()
+    this.func   = this.holes.length > 0
 
-    if (this.cons == 'app' && !this.spine) {
-        let es = I.appToArray(opts.data)
-        this.spine = I.econs(es[0].value0)
+    this.name = 'expr'
+
+    this.onrenew = d => {
+        this.renew(I.renewExpr(d)(this.data))
+    }
+
+    this.onremove = () => {
+        console.log('remove');
+        this.renew(I.eempty)
+    }
+    this.ondrop = data => {
+        // console.log('drop', data);
+        this.renew(I.assignExpr(this.data)(data))
     }
   </script>
 </expr>
+
+<hole class='{opts.spine} {opts.right?"right":""}'>
+  <type data={opts.data}/>
+
+  <type-info show={hover} data={scheme}/>
+  <highlight hover={hover}/>
+  <script>
+    this.mixin(Mixin.Selectable)
+    this.scheme = I.spure(opts.data)
+  </script>
+</hole>
 
 <highlight class={outer: opts.outer, hover: opts.hover}>
 
 </highlight>
 
+<expr-emp class='term emp'>
+  <type data={data}/>
+  this.mixin(Mixin.Data)
+</expr-emp>
+
 <var-expr class='term var'>
   <span class='token'>{opts.data.value0}</span>
+  this.mixin(Mixin.Data)
 </var-expr>
 
 <app-expr class='{opts.spine} {opts.outer?"outer":""}'>
-  <expr data={opts.data.value0} spine={opts.spine} left={true}/>
-  <expr data={opts.data.value1} right={opts.outer}/>
+  <expr data={data.value0} spine={opts.spine} left={true} renew={renewL}/>
+  <expr data={data.value1} right={opts.outer} renew={renewR}/>
+  <script>
+    this.mixin(Mixin.Data)
+    this.renewL = d => this.renew(I.appC(d)(this.data.value1))
+    this.renewR = d => this.renew(I.appC(this.data.value0)(d))
+  </script>
 </app-expr>
 
 <num-expr class='term num'>
   <span class='token'>{opts.data.value0}</span>
+  this.mixin(Mixin.Data)
 </num-expr>
 
 // Pattern ---------------------------------------------------------------------

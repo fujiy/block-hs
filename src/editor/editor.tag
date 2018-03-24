@@ -15,20 +15,49 @@ import I from 'Block.Bridge'
     <a class="navbar-brand" href="#">Block.hs</a>
   </nav>
   <div class='tab sidebar bg-secondary'>Sidebar</div>
-  <div class='tab main bg-light'>
-    <main-module data={main_module}/>
+  <div class='tab main bg-light' ref='area'>
+    <main-module data={main_module} lib={prelude}/>
   </div>
 
   <script>
+    // this.mixin(Mixin.Data)
+    this.mixin(Mixin.Trash)
+
+
     this.main_module = I.main_module
-    this.prelude = I.prelude
-    console.log(this.main_module, this.prelude);
+    this.prelude     = I.prelude
+    console.log(I, this.main_module, this.prelude);
+
+    this.onrenew = d => {
+        this.main_module = I.typeChecks(this.prelude)(d)
+        console.log('main', this.main_module);
+        this.tags['main-module'].update({data: this.main_module, lib: this.prelude})
+    }
   </script>
 </editor>
 
 <main-module>
-  <statement each={stmt in opts.data} data={stmt}/>
+  <div ref="list">
+    <statement each={stmt, i in data} data={stmt} index={i} renew={renewS(i)}/>
+  </div>
 
   <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Sortable)
+    this.name = 'module'
+
+    this.onsort = newData => {
+        console.log(newData);
+    }
+    this.renewS = i => d => {
+        const r = I.typeCheck(opts.lib)(this.data)(d)
+        // console.log(r);
+        if (r.updated) this.renew(I.renewI(i)(r.s)(this.data))
+        else {
+            console.log('update');
+            this.data[i] = r.s
+            this.update()
+        }
+    }
   </script>
 </main-module>

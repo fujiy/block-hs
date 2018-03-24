@@ -2,6 +2,10 @@ import jQuery from 'jquery'
 // import popper from 'popper.js'
 // import bootstrap from 'bootstrap'
 // import * as mdc from 'material-components-web';
+
+
+// customElements.define('main-module', class extends HTMLDivElement {constructor(){super()}}, {extends: 'div'})
+
 import riot from 'riot'
 
 import html from 'index.html'

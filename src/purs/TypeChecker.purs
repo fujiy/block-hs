@@ -61,20 +61,20 @@ getBind s = Map.lookup s <$> ask
 
 --------------------------------------------------------------------------------
 
-typeChecks :: Statements -> Array Statement -> Array Statement
+typeChecks :: Statements -> Statements -> Statements
 typeChecks lib ss =
-    let Tuple ss' us =
-            unzip $ map (typeCheck (lib <> ss) >>>
-                         \{s: s, updated: u} -> Tuple s u) ss
-    in if envir ss /= envir ss' then typeChecks lib ss' else ss'
+    let ss' = interpret (mconcat $ map envirs $ lib <> ss) $ mapM inferStmt ss
+            -- unzip $ map (typeCheck (lib <> ss) >>>
+            --              \{s: s, updated: u} -> Tuple s u) ss
+    in if map envirs ss /= map envirs ss' then typeChecks lib ss' else ss'
 
         -- {old: (Map.toUnfoldable $ envir ss) :: Array (Tuple String Scheme),
         --  new: (Map.toUnfoldable $ envir ss') :: Array (Tuple String Scheme),
         --  updated: envir ss /= envir ss'}
 
-typeCheck :: Statements -> Statement -> {s :: Statement, updated :: Boolean}
-typeCheck ss s =
-    let s' = interpret (envir ss) $ inferStmt s
+typeCheck :: Statements -> Statements -> Statement -> {s :: Statement, updated :: Boolean}
+typeCheck lib ss s =
+    let s' = interpret (mconcat $ map envirs $ lib <> ss) $ inferStmt s
     in  {s: s', updated: (s /= s')}
 
 inferStmt :: Statement -> Interpreter Statement
@@ -134,8 +134,9 @@ inferExpr t (Info e _ _) = case e of
 
 --------------------------------------------------------------------------------
 
-envir :: Statements -> Envir
-envir = mconcat <<< map \(BindStmt bs) -> maybe mempty binds $ head bs
+envirs :: Statement -> Envir
+envirs s = case s of
+    BindStmt bs -> maybe mempty binds $ head bs
 
 binds :: Bind -> Envir
 binds b = let Info e sc _ = bindVar b
