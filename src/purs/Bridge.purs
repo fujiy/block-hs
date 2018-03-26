@@ -87,10 +87,17 @@ renewI i x xs = fromMaybe xs $ updateAt i x xs
 renewBindStmt :: Int -> Bind -> Statement -> Statement
 renewBindStmt i b (BindStmt bs) = BindStmt $ renewI i b bs
 
+renewLeft :: Expr -> Bind -> Bind
+renewLeft l (Bind _ r) = Bind l r
+
 renewRight :: Expr -> Bind -> Bind
 renewRight r (Bind l _) = Bind l r
 
 renewExpr :: ExprA -> Expr -> Expr
 renewExpr e (Info _ t i) = Info e t i
 
+renewArgs :: Int -> Expr -> Array Expr -> Expr -> Expr
+renewArgs i a as b = toApp b $ renewI i a as
+
 appC a b = App a b
+varC s = Var s

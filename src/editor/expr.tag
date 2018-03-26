@@ -6,12 +6,15 @@ import I from 'Block.Bridge'
 // Bind ------------------------------------------------------------------------
 
 <bind>
-  <bind-left data={data.value0}/>
+  <bind-left data={data.value0} renew={renewL}/>
   <span class='token'>=</span>
   <expr data={data.value1} outer={true}/>
 
   <script>
     this.mixin(Mixin.Data)
+    this.renewL = d => {
+        this.renew(I.renewLeft(d)(this.data))
+    }
     this.onrenew = d => {
         this.renew(I.renewRight(d)(this.data))
     }
@@ -23,14 +26,19 @@ import I from 'Block.Bridge'
   <!--<div class='term var {args.length == 0 ?"right":""}'>
     <span class='token'>{var.value0.value0}</span>
 </div>-->
-  <pattern each={d, i in args} data={d} right={i == args.length - 1}/>
+  <pattern each={d, i in args} data={d} right={i == args.length - 1} renew={renewA(i)}/>
 
   <type-info show={hover} data={var.value1}/>
   <highlight outer={outer} hover={hover}/>
 
   <script>
+    this.mixin(Mixin.Data)
     this.args = I.appToArray(this.opts.data)
-    this.var = this.args.shift()
+    this.var  = this.args.shift()
+
+    this.renewA = i => d => {
+        this.renew(I.renewArgs(i)(d)(this.args)(this.var))
+    }
   </script>
 </bind-left>
 
@@ -146,14 +154,42 @@ import I from 'Block.Bridge'
   <highlight hover={hover}/>
 
   <script>
+    this.mixin(Mixin.Data)
     this.mixin(Mixin.Selectable)
+    this.mixin(Mixin.Clonable)
 
-    this.expr   = opts.data.value0
+    this.name   = 'expr'
+    this.expr   = this.data.value0
     this.cons   = I.econs(this.expr)
-    this.scheme = opts.data.value1
+    this.scheme = this.data.value1
+
+    this.onrenew = d => {
+        this.renew(I.renewExpr(d)(this.data))
+    }
   </script>
 </pattern>
 
 <var-pattern class='term var'>
-  <span class='token'>{opts.data.value0}</span>
+  <input-field data={data.value0}/>
+  <!--<span class='token'>{data.value0}</span>-->
+  <script>
+    this.mixin(Mixin.Data)
+    this.onrenew = s => {
+        this.renew(I.varC(s))
+    }
+  </script>
 </var-pattern>
+
+<input-field>
+  <input ref='input' type='text' value={data} onchange={onchange} oninput={oninput}/>
+  <script>
+    this.mixin(Mixin.Data)
+    this.on('mount', () => this.oninput())
+    this.onchange = e => {
+        this.renew(this.refs.input.value)
+    }
+    this.oninput = e => {
+        this.refs.input.style.width = this.refs.input.value.length + 'ch'
+    }
+  </script>
+</input-field>

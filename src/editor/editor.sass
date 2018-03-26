@@ -48,6 +48,7 @@ editor
   display: grid
   grid-template-columns: 0.4fr 1fr
   grid-template-rows: 50px 1fr 0.3fr
+  font-family: Monaco, monospace
 
   nav
     grid-column: 1/3
@@ -176,6 +177,7 @@ expr, pattern
   &.outer.func
     >.slot>.term
       @include right-border-radius(0)
+      pointer-events: auto
 
   >highlight
     margin: -2px
@@ -203,6 +205,10 @@ hole
     font-size: 0!important
   >highlight
     margin: -2px
+
+pattern
+  .ghost
+    display: inline-flex
 
 expr-emp
   >type
@@ -298,9 +304,24 @@ func-sample, expr-sample
     border-radius: $expr-border-radius
 
   .ghost
-    // opacity: 0
     display: inline-flex
 
+input-field
+  display: inline-flex
+  margin: 0 4px
+  border: none
+  pointer-events: auto
+  input
+    line-height: $token-line-height
+    padding: 0
+
+    margin: 0
+    font-size: $token-font-size
+    color: $text-light
+    border: none
+    outline: none
+    background: transparent
+    width: auto
 
 editor
   .emp, .term.emp, .slot>.term.emp

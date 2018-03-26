@@ -129,6 +129,9 @@ module.exports.Clonable = {
                 onStart: e => {
                     e.item.drag_data = this.data
                 },
+                onSort: e => {
+                  console.log('s', e);
+                }
             })
             setSelectEvent(this, this.refs.slot)
         })
