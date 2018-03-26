@@ -126,6 +126,7 @@ module.exports.Clonable = {
                 sort: false,
                 dragClass: "drag",
                 ghostClass: "ghost",
+                filter: 'input',
                 onStart: e => {
                     e.item.drag_data = this.data
                 },

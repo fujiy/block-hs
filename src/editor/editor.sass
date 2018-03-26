@@ -128,6 +128,8 @@ bind-left
       display: none
     &.func>highlight
       @include right-border-radius(0)
+  >pattern
+    pointer-events: auto
 
   // >.term
   //   @include left-border-radius($term-border-radius)
@@ -313,6 +315,8 @@ input-field
   pointer-events: auto
   input
     line-height: $token-line-height
+    height:      $token-line-height + 8px
+    // overflow: visible
     padding: 0
 
     margin: 0
