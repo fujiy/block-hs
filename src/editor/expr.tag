@@ -19,17 +19,16 @@ import I from 'Block.Bridge'
 </bind>
 
 <bind-left class='var'>
-  <div class='term var {args.length == 0 ?"right":""}'>
+  <func-sample data={var}/>
+  <!--<div class='term var {args.length == 0 ?"right":""}'>
     <span class='token'>{var.value0.value0}</span>
-  </div>
+</div>-->
   <pattern each={d, i in args} data={d} right={i == args.length - 1}/>
 
   <type-info show={hover} data={var.value1}/>
   <highlight outer={outer} hover={hover}/>
 
   <script>
-    this.mixin(Mixin.Selectable)
-
     this.args = I.appToArray(this.opts.data)
     this.var = this.args.shift()
   </script>
@@ -54,14 +53,14 @@ import I from 'Block.Bridge'
     this.mixin(Mixin.Selectable)
     this.mixin(Mixin.Draggable)
 
-    this.expr   = this.data.value0
-    this.cons   = I.econs(this.expr)
-    this.scheme = this.data.value1
-    this.outer  = opts.outer || (this.cons == 'app' && !opts.spine)
-    this.spine  = opts.spine || I.econs(I.appToArray(this.data)[0].value0)
-    this.holes  = I.arrowToArray(this.scheme.value1)
-    this.holes.pop()
-    this.func   = this.holes.length > 0
+    this.expr    = this.data.value0
+    this.cons    = I.econs(this.expr)
+    this.scheme  = this.data.value1
+    this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
+    this.func    = this.holes.length > 0
+    this.bracket = opts.bracket && this.func
+    this.outer   = opts.outer || this.bracket || (this.cons == 'app' && !opts.spine)
+    this.spine   = opts.spine || I.econs(I.appToArray(this.data)[0].value0)
 
     this.name = 'expr'
 
@@ -80,14 +79,15 @@ import I from 'Block.Bridge'
   </script>
 </expr>
 
-<hole class='{opts.spine} {opts.right?"right":""}'>
+<hole class='{opts.spine} {opts.right?"right":""} {conpact?"conpact":""}'>
   <type data={opts.data}/>
 
   <type-info show={hover} data={scheme}/>
   <highlight hover={hover}/>
   <script>
     this.mixin(Mixin.Selectable)
-    this.scheme = I.spure(opts.data)
+    this.scheme  = I.spure(opts.data)
+    this.conpact = opts.conpact == null ? true : opts.conpact
   </script>
 </hole>
 
@@ -107,7 +107,7 @@ import I from 'Block.Bridge'
 
 <app-expr class='{opts.spine} {opts.outer?"outer":""}'>
   <expr data={data.value0} spine={opts.spine} left={true} renew={renewL}/>
-  <expr data={data.value1} right={opts.outer} renew={renewR}/>
+  <expr data={data.value1} bracket={true} right={opts.outer} renew={renewR}/>
   <script>
     this.mixin(Mixin.Data)
     this.renewL = d => this.renew(I.appC(d)(this.data.value1))
@@ -122,8 +122,10 @@ import I from 'Block.Bridge'
 
 // Pattern ---------------------------------------------------------------------
 
-<pattern class={right: opts.right}>
-  <var-pattern if={cons == 'var'} data={expr}/>
+<pattern class={outer: opts.outer, right: opts.right}>
+  <div ref='slot' class='slot'>
+    <var-pattern if={cons == 'var'} data={expr}/>
+  </div>
 
   <type-info show={hover} data={scheme}/>
   <highlight hover={hover}/>

@@ -5,6 +5,7 @@ require('./stmt.tag')
 require('./expr.tag')
 require('./type.tag')
 require('./info.tag')
+require('./sample.tag')
 
 import Mixin from './mixin.js'
 
@@ -14,7 +15,12 @@ import I from 'Block.Bridge'
   <nav class="navbar navbar-dark bg-dark">
     <a class="navbar-brand" href="#">Block.hs</a>
   </nav>
-  <div class='tab sidebar bg-secondary'>Sidebar</div>
+  <div class='tab sidebar'>
+    Expr:
+    <p each={d in sampleExprs}><expr-sample data={d}/></p>
+    Function:
+    <p each={d in prelude}><sample data={d}/></p>
+  </div>
   <div class='tab main bg-light' ref='area'>
     <main-module data={main_module} lib={prelude}/>
   </div>
@@ -26,6 +32,7 @@ import I from 'Block.Bridge'
 
     this.main_module = I.main_module
     this.prelude     = I.prelude
+    this.sampleExprs = I.sampleExprs
     console.log(I, this.main_module, this.prelude);
 
     this.onrenew = d => {

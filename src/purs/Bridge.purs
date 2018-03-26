@@ -2,9 +2,9 @@ module Block.Bridge where
 
 import Prelude
 import Data.Monoid
-import Data.Array (updateAt)
+import Data.Array (updateAt, head)
 import Data.Tuple
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybe)
 
 import Block.Data
 import Block.Data as D
@@ -24,6 +24,9 @@ prelude = typeChecks []
     [BindStmt [Bind (epure $ Var "one") (epure $ Num 0)]] <>
     [BindStmt [Bind (idefault (spure $ arrow (tpure $ Id "Int") (tpure $ Id "Int")) (Var "negate")) eempty],
      BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty]]
+
+sampleExprs :: Array Expr
+sampleExprs = [idefault (spure $ tpure $ Id "Int") (Num 0)]
 
 exprB = epure $ App exprA (epure $ Var "fuga")
 exprA = epure $ App (epure $ Var "hoge") (epure $ Num 0)
@@ -49,6 +52,9 @@ arrowToArray = arrowToArray_
 spure = D.spure
 eempty = D.eempty
 
+bindStmtVar :: Statement -> Expr
+bindStmtVar s = case s of
+    BindStmt bs -> maybe eempty bindVar $ head bs
 
 assignExpr :: Expr -> Expr -> Expr
 assignExpr a@(Info x _ _) b@(Info y _ _) = case Tuple x y of

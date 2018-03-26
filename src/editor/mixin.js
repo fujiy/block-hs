@@ -30,6 +30,19 @@ module.exports.Selectable = {
         }
     }
 }
+function setSelectEvent(self, target) {
+    target.ondragover = e => {
+        if (!self.hover) {
+            self.hover = true
+            self.update()
+        }
+    }
+    target.ondragleave = e => {
+        self.hover = false
+        self.update()
+  }
+}
+
 module.exports.Sortable = {
     init: function() {
         this.on('mount', () => {
@@ -48,6 +61,7 @@ module.exports.Sortable = {
                     this.onsort(newData)
                 },
             })
+            setSelectEvent(this, this.refs.list)
         })
     },
     onsort: function(newData){}
@@ -58,10 +72,11 @@ module.exports.Draggable = {
             this.sortable = Sortable.create(this.refs.slot, {
                 group: {
                     name: this.name,
-                    put:  [this.name, 'trash']
+                    put:  [this.name]
                 },
                 sort: false,
                 dragClass: "drag",
+                ghostClass: "ghost",
                 onStart: e => {
                     e.item.drag_data = this.data
                     this.onremove()
@@ -72,16 +87,7 @@ module.exports.Draggable = {
                     if (e.to == this.refs.slot) this.ondrop(newData)
                 },
             })
-            this.refs.slot.ondragover = e => {
-                if (!this.hover) {
-                    this.hover = true
-                    this.update()
-                }
-            }
-            this.refs.slot.ondragleave = e => {
-                this.hover = false
-                this.update()
-            }
+            setSelectEvent(this, this.refs.slot)
         })
     },
     onremove: function() {},
@@ -90,18 +96,20 @@ module.exports.Draggable = {
 module.exports.Clonable = {
     init: function() {
         this.on('mount', () => {
-            this.sortable = Sortable.create(this.refs.clone, {
+            this.sortable = Sortable.create(this.refs.slot, {
                 group: {
                     name: this.name,
                     pull: 'clone',
-                    put: [this.name, 'trash']
+                    put: false
                 },
                 sort: false,
                 dragClass: "drag",
+                ghostClass: "ghost",
                 onStart: e => {
                     e.item.drag_data = this.data
                 },
             })
+            setSelectEvent(this, this.refs.slot)
         })
     }
 }
@@ -113,7 +121,8 @@ module.exports.Trash = {
                 sort: false,
                 // draggable: '',
                 onSort: e => {
-                    console.log('trash', e);
+                    e.item.remove()
+                    // console.log('trash', e.item, e.clone);
                 },
             })
         })

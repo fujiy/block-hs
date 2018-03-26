@@ -55,6 +55,9 @@ editor
     &.sidebar
       grid-column: 1/2
       grid-row: 2/4
+      background: $gray-0
+      >p
+        margin: 5px
 
     &.main
       grid-column: 2/3
@@ -64,9 +67,20 @@ editor
     width: 100px
     background: $gray-1
 
+    .ghost
+      // opacity: 0
+      display: none
+
+  .slot
+    display: inline-flex
+    align-items: center
+    height: 100%
+
   .term
     display: inline-flex
     position: relative
+    align-items: center
+    height: 100%
     // z-index: 1
     color: $text-light
     // padding: 2px
@@ -80,8 +94,9 @@ editor
     pointer-events: auto
 
 
-  .sortable-ghost
-    opacity: 0
+  .ghost
+    // opacity: 0
+    display: none
 
   .drag
     // pointer-events: none
@@ -103,12 +118,21 @@ bind-left
   position: relative
   border: $expr-border
   border-radius: $expr-border-radius
-  >.term
-    @include left-border-radius($term-border-radius)
-    border-right: $expr-border
-    &.right
-      @include right-border-radius($term-border-radius)
-      border-right: none
+
+  >func-sample
+    margin: -2px
+    margin-right: 0
+    >.slot>.sample:not(.drag)>hole
+      display: none
+    &.func>highlight
+      @include right-border-radius(0)
+
+  // >.term
+  //   @include left-border-radius($term-border-radius)
+  //   border-right: $expr-border
+  //   &.right
+  //     @include right-border-radius($term-border-radius)
+  //     border-right: none
     // border:        $expr-border
     // border-radius: $expr-border-radius
   >highlight
@@ -126,12 +150,6 @@ expr, pattern
   &.outer
     pointer-events: auto
 
-  &.outer>.slot>.term, >.slot>.term.drag
-    border: $expr-border
-    border-radius: $expr-border-radius
-  &.outer.func
-    >.slot>.term
-      @include right-border-radius(0)
   &.left
     >.slot>.term
       @include left-border-radius($term-border-radius)
@@ -144,6 +162,12 @@ expr, pattern
       @include right-border-radius($term-border-radius)
     >highlight
       @include right-border-radius($expr-border-radius)
+  &.outer>.slot>.term, >.slot>.term.drag
+    border: $expr-border
+    border-radius: $expr-border-radius
+  &.outer.func
+    >.slot>.term
+      @include right-border-radius(0)
 
   >highlight
     margin: -2px
@@ -163,13 +187,12 @@ hole
     border-right: $expr-border
     >highlight
       @include right-border-radius($expr-border-radius)
-  >type
-    >.term
-      color: $text-gray
-      border: none
-      background-color: transparent!important
-    *
-      font-size: 0!important
+  >type>.term
+    color: $text-gray
+    border: none
+    background-color: transparent!important
+  &.conpact>type *
+    font-size: 0!important
   >highlight
     margin: -2px
 
@@ -245,6 +268,31 @@ highlight
   transition: .05s
   &.hover
     opacity: 1
+
+func-sample, expr-sample
+  display: inline-flex
+  position: relative
+  cursor: pointer
+  font-size: 0
+  >.slot>.term
+    border: $expr-border
+    border-radius: $expr-border-radius
+  >.slot>.sample>.term
+    border: $expr-border
+    border-radius: $expr-border-radius
+    &.var
+      background:   $var-color
+      border-color: $var-border
+  &.func>.slot>.sample>.term
+    // border-radius: $term-border-radius
+    @include right-border-radius(0)
+  >highlight
+    border-radius: $expr-border-radius
+
+  .ghost
+    // opacity: 0
+    display: inline-flex
+
 
 editor
   .emp, .term.emp, .slot>.term.emp
