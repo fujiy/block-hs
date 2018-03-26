@@ -4,14 +4,15 @@
 $text-light: $white
 $text-gray:  $gray-2
 
-$var-color:    $cyan-0
-$var-border:   $cyan-1
-$num-color:    $blue-0
-$num-border:   $blue-1
-$type-color:   $light-green-0
-$type-border:  $light-green-1
-$empty-color:  $gray-0
-$empty-border: $gray-2
+$var-color:     $cyan-0
+$var-border:    $cyan-1
+$num-color:     $blue-0
+$num-border:    $blue-1
+$type-color:    $light-green-0
+$type-border:   $light-green-1
+$bracket-color: $blue-gray-0
+$empty-color:   $gray-0
+$empty-border:  $gray-2
 
 $light-color: $white
 $hover-color: rgba(255,255,255,.8)
@@ -149,7 +150,12 @@ expr, pattern
 
   &.outer
     pointer-events: auto
-
+  &.bracket
+    background: $bracket-color
+    padding: 1px
+    pointer-events: none
+    >highlight.outer
+      margin: 1px
   &.left
     >.slot>.term
       @include left-border-radius($term-border-radius)
@@ -162,6 +168,8 @@ expr, pattern
       @include right-border-radius($term-border-radius)
     >highlight
       @include right-border-radius($expr-border-radius)
+    &.bracket
+      @include right-border-radius($term-border-radius)
   &.outer>.slot>.term, >.slot>.term.drag
     border: $expr-border
     border-radius: $expr-border-radius
@@ -187,11 +195,11 @@ hole
     border-right: $expr-border
     >highlight
       @include right-border-radius($expr-border-radius)
-  >type>.term
+  >.slot>type>.term
     color: $text-gray
     border: none
     background-color: transparent!important
-  &.conpact>type *
+  &.conpact>.slot>type *
     font-size: 0!important
   >highlight
     margin: -2px

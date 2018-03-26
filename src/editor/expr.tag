@@ -36,14 +36,15 @@ import I from 'Block.Bridge'
 
 // Expr ------------------------------------------------------------------------
 
-<expr class={left: opts.left, right: opts.right, outer: outer, func: func}>
+<expr class={left: opts.left, right: opts.right, outer: outer, func: func, bracket: bracket}>
   <div ref='slot' class='slot'>
     <expr-emp if={cons == 'emp'} data={scheme.value1}/>
     <var-expr if={cons == 'var'} data={expr}/>
     <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
     <num-expr if={cons == 'num'} data={expr}/>
   </div>
-  <hole if={outer && func} spine={spine} each={t, i in holes} data={t} right={i == holes.length - 1}/>
+  <hole if={outer && func} spine={spine} each={t, i in holes}
+        data={t} right={i == holes.length - 1} renew={apply(i)}/>
 
   <type-info show={hover} data={scheme}/>
   <highlight outer={outer} hover={hover}/>
@@ -58,14 +59,20 @@ import I from 'Block.Bridge'
     this.scheme  = this.data.value1
     this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
     this.func    = this.holes.length > 0
-    this.bracket = opts.bracket && this.func
-    this.outer   = opts.outer || this.bracket || (this.cons == 'app' && !opts.spine)
+    this.app     = this.cons == 'app' && !opts.spine
+    this.bracket = opts.bracket && (this.func || this.app)
+    this.outer   = opts.outer || this.bracket || this.app
     this.spine   = opts.spine || I.econs(I.appToArray(this.data)[0].value0)
 
     this.name = 'expr'
 
     this.onrenew = d => {
         this.renew(I.renewExpr(d)(this.data))
+    }
+    this.apply = i => d => {
+        console.log('apply', i, d);
+        console.log(I.fillExprWith(i)(d)(this.data));
+        this.renew(I.fillExprWith(i)(d)(this.data))
     }
 
     this.onremove = () => {
@@ -80,14 +87,22 @@ import I from 'Block.Bridge'
 </expr>
 
 <hole class='{opts.spine} {opts.right?"right":""} {conpact?"conpact":""}'>
-  <type data={opts.data}/>
+  <div ref='slot' class='slot'>
+    <type data={opts.data}/>
+  </div>
 
   <type-info show={hover} data={scheme}/>
   <highlight hover={hover}/>
   <script>
+    this.mixin(Mixin.Data)
     this.mixin(Mixin.Selectable)
-    this.scheme  = I.spure(opts.data)
+    this.mixin(Mixin.Droppable)
+
+    this.name = 'expr'
+    this.scheme  = I.spure(this.data)
     this.conpact = opts.conpact == null ? true : opts.conpact
+
+    this.ondrop = d => this.renew(d)
   </script>
 </hole>
 

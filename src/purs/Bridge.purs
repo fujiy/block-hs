@@ -61,6 +61,9 @@ assignExpr a@(Info x _ _) b@(Info y _ _) = case Tuple x y of
     Tuple Empty _ -> b
     _ -> b
 
+fillExprWith :: Int -> Expr -> Expr -> Expr
+fillExprWith 0 a f = app f a
+fillExprWith i a f = app (fillExprWith (i - 1) a f) eempty
 
 econs :: ExprA -> String
 econs e = case e of

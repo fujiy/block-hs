@@ -93,6 +93,27 @@ module.exports.Draggable = {
     onremove: function() {},
     ondrop: function(newData) {}
 }
+module.exports.Droppable = {
+    init: function() {
+        this.on('mount', () => {
+            this.sortable = Sortable.create(this.refs.slot, {
+                group: {
+                    name: this.name,
+                    pull: false,
+                    put:  [this.name]
+                },
+                sort: false,
+                ghostClass: "ghost",
+                onSort: e => {
+                    const newData = e.item.drag_data
+                    if (e.to == this.refs.slot) this.ondrop(newData)
+                },
+            })
+            setSelectEvent(this, this.refs.slot)
+        })
+    },
+    ondrop: function(data) {}
+}
 module.exports.Clonable = {
     init: function() {
         this.on('mount', () => {
