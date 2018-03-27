@@ -13,9 +13,11 @@ $type-border:   $light-green-1
 $bracket-color: $blue-gray-0
 $empty-color:   $gray-0
 $empty-border:  $gray-2
+$error-color:   $strong-red-0
+$error-border:  $strong-red-1
 
 $light-color: $white
-$hover-color: rgba(255,255,255,.8)
+$hover-color: rgba($white,.8)
 
 $token-font-size:   16px
 $token-line-height: $token-font-size
@@ -291,6 +293,30 @@ type-info
   &, *
     pointer-events: none
 
+infos
+  position: absolute
+  left: 0
+  bottom: 100%
+  z-index: 100
+  &, *
+    pointer-events: none
+
+error
+  display: flex
+  align-items: center
+  white-space: nowrap
+  // flex-basis: content
+  // width: 300px
+  border: $expr-border
+  border-radius: $expr-border-radius
+  background: $error-color
+  border-color: $error-border
+
+  .term
+    border: $expr-border
+    border-radius: $expr-border-radius
+    margin: 1px
+
 highlight
   display: inline-block
   position: absolute
@@ -300,16 +326,17 @@ highlight
   left: 0
   right: 0
   bottom: 0
-  opacity: 0
   border: $expr-border
-  border-color: $hover-color
-  opacity: 0
   pointer-events: none
   box-shadow: $light-1
-  background-color: rgba(255,255,255,0.2)
+  border-color: transparent
   transition: .05s
+  &.error
+    border-color: $error-border
   &.hover
-    opacity: 1
+    border-color: $hover-color
+    background-color: rgba(255,255,255,0.2)
+    // opacity: 1
 
 sample
   .sample

@@ -81,6 +81,12 @@ tcons t = case t of
     TApp _ _ -> "app"
     Unknown  -> "unk"
 
+errcons :: Error -> String
+errcons e = case e of
+  EOutOfScopeVar   -> "var"
+  EMisMatch _ _    -> "match"
+  EOccursCheck _ _ -> "occurs"
+
 renewI :: forall a. Int -> a -> Array a -> Array a
 renewI i x xs = fromMaybe xs $ updateAt i x xs
 

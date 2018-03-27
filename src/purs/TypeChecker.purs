@@ -119,7 +119,7 @@ inferExpr t (Info e _ _) = case e of
                 ts <- instantiate sc
                 {type: t', infos: i} <- unify t ts
                 pure $ Info e (spure t') i
-            Nothing -> traceWith "error" s $ pure $ Info e (spure t) (Infos{ errors: [OutOfScopeVar] })
+            Nothing -> traceWith "error" s $ pure $ Info e (spure t) (Infos{ errors: [EOutOfScopeVar s] })
     App a b -> do
         ta <- traceId <$> newTVarT
         tb <- newTVarT
@@ -233,13 +233,13 @@ unify a b = do
             success a
         Tuple (TVar x) _ ->
             if occursCheck x b
-            then error b $ EOccursCheck a' b'
+            then error a $ EOccursCheck a' b'
             else do
                 assignTVar x b
                 success b
         Tuple _ (TVar y) ->
             if occursCheck y a
-            then error a $ EOccursCheck a' b'
+            then error b $ EOccursCheck a' b'
             else do
                 assignTVar y a
                 success a

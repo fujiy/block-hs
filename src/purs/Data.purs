@@ -161,7 +161,7 @@ derive instance eqKind :: Eq Kind
 
 newtype Infos = Infos { errors :: Array Error }
 
-data Error = OutOfScopeVar
+data Error = EOutOfScopeVar String
            | EMisMatch Type Type
            | EOccursCheck Type Type
 

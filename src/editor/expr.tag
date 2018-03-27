@@ -82,8 +82,9 @@ import I from 'Block.Bridge'
   <hole if={outer && func} spine={spine} each={t, i in holes}
         data={t} right={i == holes.length - 1} renew={apply(i)}/>
 
+  <infos show={hover} data={infos}/>
   <type-info show={hover} data={scheme}/>
-  <highlight outer={outer} hover={hover}/>
+  <highlight outer={outer} hover={hover} infos={infos}/>
 
   <script>
     this.mixin(Mixin.Data)
@@ -93,6 +94,7 @@ import I from 'Block.Bridge'
     this.expr    = this.data.value0
     this.cons    = I.econs(this.expr)
     this.scheme  = this.data.value1
+    this.infos   = this.data.value2
     this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
     this.func    = this.holes.length > 0
     this.app     = this.cons == 'app' && !opts.spine
@@ -142,8 +144,10 @@ import I from 'Block.Bridge'
   </script>
 </hole>
 
-<highlight class={outer: opts.outer, hover: opts.hover}>
-
+<highlight class={outer: opts.outer, hover: opts.hover, error: error}>
+  <script>
+    this.error = opts.infos && opts.infos.errors && opts.infos.errors.length > 0
+  </script>
 </highlight>
 
 <expr-emp class='term emp'>
