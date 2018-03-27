@@ -22,10 +22,11 @@ import I from 'Block.Bridge'
 </bind>
 
 <bind-left class='var'>
-  <func-sample data={var}/>
-  <!--<div class='term var {args.length == 0 ?"right":""}'>
+  <!-- <func-sample data={var}/>
+  <div class='term var {args.length == 0 ?"right":""}'>
     <span class='token'>{var.value0.value0}</span>
-</div>-->
+</div> -->
+  <bind-var data={var}/>
   <pattern each={d, i in args} data={d} right={i == args.length - 1} renew={renewA(i)}/>
 
   <type-info show={hover} data={var.value1}/>
@@ -41,6 +42,33 @@ import I from 'Block.Bridge'
     }
   </script>
 </bind-left>
+
+<bind-var class={func: func}>
+  <div ref='slot' class='slot'>
+    <div class='sample'>
+      <div class='term var'>
+        <span class='token'>{expr.value0}</span>
+      </div>
+      <hole each={t, i in holes} data={t} right={i == holes.length - 1} spine='var' conpact={false}/>
+    </div>
+  </div>
+
+  <type-info show={hover} data={scheme}/>
+  <highlight hover={hover}/>
+
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Selectable)
+    this.mixin(Mixin.Clonable)
+
+    this.name   = 'expr'
+    this.expr   = this.data.value0
+    this.scheme = this.data.value1
+    this.holes  = I.arrowToArray(this.scheme.value1)
+    this.holes.pop()
+    this.func   = this.holes.length > 0
+  </script>
+</bind-var>
 
 // Expr ------------------------------------------------------------------------
 

@@ -121,7 +121,7 @@ bind-left
   border: $expr-border
   border-radius: $expr-border-radius
 
-  >func-sample
+  >bind-var
     margin: -2px
     margin-right: 0
     >.slot>.sample:not(.drag)>hole
@@ -142,6 +142,25 @@ bind-left
   >highlight
     margin: -2px
     border-radius: $expr-border-radius
+
+bind-var
+  display: inline-flex
+  position: relative
+  cursor: pointer
+  font-size: 0
+  >.slot>.sample>.term
+    border: $expr-border
+    border-radius: $expr-border-radius
+    &.var
+      background:   $var-color
+      border-color: $var-border
+  &.func>.slot>.sample>.term
+    @include right-border-radius(0)
+  >highlight
+    border-radius: $expr-border-radius
+
+  .ghost
+    display: inline-flex
 
 expr, pattern
   display: inline-flex
@@ -194,9 +213,9 @@ hole
   border-bottom: $expr-border
   background-color: transparent!important
   pointer-events: auto
+  border-right: $expr-border
   &.right
     @include right-border-radius($expr-border-radius)
-    border-right: $expr-border
     >highlight
       @include right-border-radius($expr-border-radius)
   >.slot>type>.term
@@ -285,7 +304,7 @@ highlight
   &.hover
     opacity: 1
 
-func-sample, expr-sample
+expr-sample
   display: inline-flex
   position: relative
   cursor: pointer
@@ -293,15 +312,6 @@ func-sample, expr-sample
   >.slot>.term
     border: $expr-border
     border-radius: $expr-border-radius
-  >.slot>.sample>.term
-    border: $expr-border
-    border-radius: $expr-border-radius
-    &.var
-      background:   $var-color
-      border-color: $var-border
-  &.func>.slot>.sample>.term
-    // border-radius: $term-border-radius
-    @include right-border-radius(0)
   >highlight
     border-radius: $expr-border-radius
 
