@@ -156,7 +156,7 @@ import I from 'Block.Bridge'
   this.mixin(Mixin.Data)
 </var-expr>
 
-<app-expr class='{opts.spine} {opts.outer?"outer":""}'>
+<app-expr class='term {opts.spine} {opts.outer?"outer":""}'>
   <expr data={data.value0} spine={opts.spine} left={true} renew={renewL}/>
   <expr data={data.value1} bracket={true} right={opts.outer} renew={renewR}/>
   <script>

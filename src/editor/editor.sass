@@ -26,6 +26,7 @@ $expr-border: 2px solid
 
 $term-shadow:       $shadow-1
 $term-shadow-hover: $shadow-2
+$hole-shadow:       $shadow-1-inset
 $term-transition:   0.2s
 
 
@@ -115,11 +116,17 @@ statement
   margin: 10px
   padding: 5px
 
+bind
+  font-size: 0
+  >.token
+    margin: 0 6px
+
 bind-left
   display:  inline-flex
   position: relative
   border: $expr-border
   border-radius: $expr-border-radius
+  box-shadow: $term-shadow
 
   >bind-var
     margin: -2px
@@ -148,6 +155,8 @@ bind-var
   position: relative
   cursor: pointer
   font-size: 0
+  >.slot>.sample
+    border-radius: $expr-border-radius
   >.slot>.sample>.term
     border: $expr-border
     border-radius: $expr-border-radius
@@ -172,6 +181,10 @@ expr, pattern
 
   &.outer
     pointer-events: auto
+    border-radius: $expr-border-radius
+    box-shadow: $term-shadow
+    // >.slot>.term
+
   &.bracket
     background: $bracket-color
     padding: 1px
@@ -214,6 +227,7 @@ hole
   background-color: transparent!important
   pointer-events: auto
   border-right: $expr-border
+  box-shadow: $hole-shadow
   &.right
     @include right-border-radius($expr-border-radius)
     >highlight
@@ -258,15 +272,8 @@ app-expr
   pointer-events: auto
 
   &.outer
-    // border-style: solid
-    // border-width: 2px
     border: $expr-border
     border-radius: $expr-border-radius
-    box-shadow: $term-shadow
-  // &.var
-  //   border-color: $var-border
-  // &.num
-  //   border-color: $num-border
 
 type
   display: inline-flex
@@ -299,10 +306,14 @@ highlight
   opacity: 0
   pointer-events: none
   box-shadow: $light-1
-  background-color: rgba(255,255,255,0.1)
+  background-color: rgba(255,255,255,0.2)
   transition: .05s
   &.hover
     opacity: 1
+
+sample
+  .sample
+    box-shadow: $term-shadow
 
 expr-sample
   display: inline-flex
@@ -312,6 +323,7 @@ expr-sample
   >.slot>.term
     border: $expr-border
     border-radius: $expr-border-radius
+    box-shadow: $term-shadow
   >highlight
     border-radius: $expr-border-radius
 
