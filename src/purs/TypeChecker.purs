@@ -91,7 +91,7 @@ inferBind (Bind a b) = do
     appBindVar :: Expr -> Array Expr -> Expr
     appBindVar = toApp
 
-inferLambda :: Type -> Array Expr -> Expr -> Infer {args :: Array Expr, expr :: Expr, infos :: Infos}
+inferLambda :: Type -> Array Expr -> Expr -> Infer {args :: Array Expr, expr :: Expr, type :: Type, infos :: Infos}
 inferLambda t as b = case uncons as of
     Just {head: a, tail: bs} -> do
         ta <- newTVarT
@@ -100,10 +100,10 @@ inferLambda t as b = case uncons as of
         {args: bs', expr: b', infos: i} <-
             localEnv (paramVars a') $ inferLambda tb bs b
         {type: t', infos: j} <- unify t (arrow ta tb)
-        pure {args: a':bs', expr: b', infos: i <> j}
+        pure {args: a':bs', expr: b', type: t', infos: i <> j}
     Nothing -> do
         b' <- inferExpr t b
-        pure {args: as, expr: b', infos: mempty}
+        pure {args: as, expr: b', type: t, infos: mempty}
     -- case uncons as of
     --     Just {head: a, tail: as'} -> do
 
@@ -127,6 +127,9 @@ inferExpr t (Info e _ _) = case e of
         a' <- inferExpr (arrow tb t) a
         b' <- inferExpr tb b
         pure $ idefault (spure t) $ App a' b'
+    Lambda as b -> do
+        {args: as', expr: b', type: t', infos: i} <- inferLambda t as b
+        pure $ Info (Lambda as' b') (spure t') i
     Num _ -> do
         {type: t', infos: i} <- unify t (tpure $ Id "Int")
         pure $ Info e (spure t') i
@@ -274,7 +277,8 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
     goExpr :: Expr -> Infer Expr
     goExpr (Info e sc i) = do
         e' <- case e of
-            App a b -> App <$> goExpr a <*> goExpr b
+            App a b     -> App <$> goExpr a <*> goExpr b
+            Lambda as b -> Lambda <$> mapM goExpr as <*> goExpr b
             _ -> pure e
         sc' <- goScheme sc
         pure $ Info e' sc' i

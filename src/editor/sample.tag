@@ -1,5 +1,7 @@
 // Sample
 
+import $ from 'jquery'
+
 import Mixin from './mixin.js'
 import I from 'Block.Bridge'
 
@@ -19,7 +21,8 @@ import I from 'Block.Bridge'
 
 <expr-sample>
   <div class='slot' ref='slot'>
-    <num-expr if={cons == 'num'} data={expr}/>
+    <num-expr    if={cons == 'num'} data={expr}/>
+    <expr-lambda if={cons == 'lam'} data={expr}/>
   </div>
 
   <type-info show={hover} data={scheme}/>
@@ -34,6 +37,8 @@ import I from 'Block.Bridge'
     this.expr   = this.data.value0
     this.cons   = I.econs(this.expr)
     this.scheme = this.data.value1
+
+    this.on('mount', () => $(this.root).find('num-expr .token').text('Int'))
   </script>
 
 </expr-sample>

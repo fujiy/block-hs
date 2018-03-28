@@ -88,9 +88,10 @@ import I from 'Block.Bridge'
 
 <expr class={left: opts.left, right: opts.right, outer: outer, func: func, bracket: bracket}>
   <div ref='slot' class='slot'>
-    <expr-emp if={cons == 'emp'} data={scheme.value1}/>
-    <var-expr if={cons == 'var'} data={expr}/>
-    <app-expr if={cons == 'app'} data={expr} spine={spine} outer={outer}/>
+    <expr-emp   if={cons == 'emp'} data={scheme.value1}/>
+    <var-expr   if={cons == 'var'} data={expr}/>
+    <app-expr   if={cons == 'app'} data={expr} spine={spine} outer={outer && !func}/>
+    <expr-lambda if={cons == 'lam'} data={expr} renew={renewE}/>
     <num-expr if={cons == 'num'} data={expr}/>
   </div>
   <hole if={outer && func} spine={spine} each={t, i in holes}
@@ -119,6 +120,7 @@ import I from 'Block.Bridge'
     this.name = 'expr'
 
     this.onrenew = d => this.renew(I.renewExpr(d)(this.data))
+    this.renewE  = d => this.renew(d)
     this.apply = i => d => {
         console.log('apply', i, d);
         console.log(I.fillExprWith(i)(d)(this.data));
@@ -173,6 +175,26 @@ import I from 'Block.Bridge'
   <span class='token'>{opts.data.value0}</span>
   this.mixin(Mixin.Data)
 </var-expr>
+
+<expr-lambda class='term lam'>
+  <div class='left'>
+    <span class='token'>λ</span>
+    <pattern each={d, i in params} data={d} renew={renewA(i)}/>
+    <add-area renew={addArg}/>
+    <span class='token'>→</span>
+  </div>
+  <expr data={expr} bracket={true}>
+
+  <script>
+    this.mixin(Mixin.Data)
+    this.params = this.data.value0
+    this.expr   = this.data.value1
+    this.onrenew = d => this.renew(I.lambdaC(this.params)(d))
+    this.renewA  = i => d => this.renew(d ? I.renewLambda(i)(d)(this.params)(this.expr)
+                                          : I.deleteLambda(i)(this.params)(this.expr) )
+    this.addArg  = d => this.renew(I.lambdaC(this.params.concat(d || I.pempty))(this.expr))
+  </script>
+</expr-lambda>
 
 <app-expr class='term {opts.spine} {opts.outer?"outer":""}'>
   <expr data={data.value0} spine={opts.spine} left={true} renew={renewL}/>

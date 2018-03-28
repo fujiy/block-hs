@@ -2,7 +2,7 @@ module Block.Bridge where
 
 import Prelude
 import Data.Monoid
-import Data.Array (updateAt, deleteAt, head)
+import Data.Array (updateAt, deleteAt, head, length)
 import Data.Tuple
 import Data.Maybe (fromMaybe, maybe)
 
@@ -26,7 +26,13 @@ prelude = typeChecks []
      BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty]]
 
 sampleExprs :: Array Expr
-sampleExprs = [idefault (spure $ tpure $ Id "Int") (Num 0)]
+sampleExprs = [idefault (spure' $ Id "Int") (Num 0),
+               idefault (spure $ arrow ta tb) (Lambda [idefault ta' $ Var "a"] $ idefault tb' Empty)]
+
+ta = tpure $ TVar $ Named "a"
+tb = tpure $ TVar $ Named "b"
+ta' = spure ta
+tb' = spure tb
 
 exprB = epure $ App exprA (epure $ Var "fuga")
 exprA = epure $ App (epure $ Var "hoge") (epure $ Num 0)
@@ -35,7 +41,7 @@ foo = epure $ App (epure $ Var "foo") (epure $ Var "y")
 one = epure $ Num 1
 
 app a b = epure $ App a b
-
+spure' = spure <<< tpure
 
 typeChecks = TC.typeChecks
 typeCheck  = TC.typeCheck
@@ -71,10 +77,11 @@ fillExprWith i a f = app (fillExprWith (i - 1) a f) eempty
 
 econs :: ExprA -> String
 econs e = case e of
-    Var _   -> "var"
-    App _ _ -> "app"
-    Num _   -> "num"
-    Empty   -> "emp"
+    Var _      -> "var"
+    App _ _    -> "app"
+    Num _      -> "num"
+    Lambda _ _ -> "lam"
+    Empty      -> "emp"
 
 tcons :: TypeA -> String
 tcons t = case t of
@@ -112,5 +119,13 @@ renewArgs i a as b = toApp b $ renewI i a as
 deleteArg :: Int -> Array Expr -> Expr -> Expr
 deleteArg i as b = toApp b $ fromMaybe as $ deleteAt i as
 
-appC a b = App a b
-varC s = Var s
+renewLambda :: Int -> Expr -> Array Expr -> Expr -> Expr
+renewLambda i a as b = epure $ Lambda (renewI i a as) b
+
+deleteLambda :: Int -> Array Expr -> Expr -> Expr
+deleteLambda i as b = lambdaC (fromMaybe as $ deleteAt i as) b
+
+appC    = App
+varC    = Var
+lambdaC [] b = b
+lambdaC as b = epure $ Lambda as b

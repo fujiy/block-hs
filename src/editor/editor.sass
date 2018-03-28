@@ -9,6 +9,8 @@ $var-color:     $cyan-0
 $var-border:    $cyan-1
 $num-color:     $blue-0
 $num-border:    $blue-1
+$lambda-color:   $purple-0
+$lambda-border:  $purple-1
 $type-color:    $light-green-0
 $type-border:   $light-green-1
 $bracket-color: $blue-gray-0
@@ -161,15 +163,6 @@ bind-left
   >pattern
     pointer-events: auto
 
-  // >.term
-  //   @include left-border-radius($term-border-radius)
-  //   border-right: $expr-border
-  //   &.right
-  //     @include right-border-radius($term-border-radius)
-  //     border-right: none
-    // border:        $expr-border
-    // border-radius: $expr-border-radius
-
   add-area
     position: absolute
     left: 100%
@@ -276,6 +269,7 @@ expr, pattern
       border-radius: $expr-border-radius
 
 pattern
+  pointer-events: auto
   &:not(.right)
     border-right: $expr-border
     border-color: $var-border
@@ -341,6 +335,7 @@ hole
     margin: -2px
 
 expr-emp
+  pointer-events: auto
   >type
     >.term
       border: none
@@ -348,13 +343,6 @@ expr-emp
       border-color: $empty-border
       background:   $empty-color
       color:        $text-gray
-  // >.slot>type
-  //   >.term.type
-  //     border-color: $empty-border
-  //     color: $text-gray
-  //     background: transparent
-  //   *
-  //     background: transparent
 
 app-expr
   display: inline-flex
@@ -364,13 +352,38 @@ app-expr
   font-size: 0
   // border-radius: $term-border-radius
   @include left-border-radius($term-border-radius)
-
   border-right: $expr-border
   pointer-events: auto
+
+  expr-emp
+    pointer-events: none
 
   &.outer
     border: $expr-border
     border-radius: $expr-border-radius
+
+expr-lambda
+  @include flex-expr
+  >.left
+    @include flex-expr
+    position: relative
+    pattern
+      border-color: $lambda-border
+      &:nth-child(2)
+        border-left: $expr-border
+        border-color: $lambda-border
+    >add-area
+      position: absolute
+      right: $token-font-size - 5px
+      // margin-left: 2px
+      margin-top: -2px
+      opacity: 0
+  >expr
+    border-left: $expr-border
+    border-color: $lambda-border
+
+  &:hover add-area
+    opacity: 1
 
 type
   display: inline-flex
@@ -456,9 +469,16 @@ expr-sample
     box-shadow: $term-shadow
   >highlight
     border-radius: $expr-border-radius
-
   .ghost
     display: inline-flex
+  handle
+    display: none
+  add-area
+    display: none
+  expr-lambda
+    >expr>.slot>.term
+      @include right-border-radius($term-border-radius)
+      // border-top-right-radius: $term-border-radius!important
 
 input-field
   display: inline-flex
@@ -489,6 +509,9 @@ editor
   .num, .term.num, .slot>.term.num
     background:   $num-color
     border-color: $num-border
+  .lam, .term.lam, .slot>.term.lam
+    background:   $lambda-color
+    border-color: $lambda-border
   .type, .term.type, .slot>.term.type
     background:   $type-color
     border-color: $type-border

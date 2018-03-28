@@ -29,6 +29,9 @@ instance eqInfo :: (Eq t, Eq1 f) => Eq (Info t f) where
 idefault :: forall t f. t -> InfoA t f -> Info t f
 idefault t a = Info a t mempty
 
+tof :: forall t f. Info t f -> t
+tof (Info _ t _) = t
+
 -- Statement -------------------------------------------------------------------
 
 data Statement = BindStmt (Array Bind)
@@ -43,7 +46,7 @@ type ExprA = InfoA Scheme ExprC
 data ExprC e = Var String
            -- | Cons String
              | App e e
-           -- | Lambda (Array Expr) Expr
+             | Lambda (Array Expr) Expr
              | Num Int
            -- | Oper Expr (Maybe Expr) (Maybe Expr)
            -- | If Expr Expr Expr
