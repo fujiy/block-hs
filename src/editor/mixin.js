@@ -51,6 +51,7 @@ module.exports.Sortable = {
                 sort: true,
                 animation: 100,
                 dragClass: "drag",
+                ghostClass: "ghost",
                 onStart: e => {
                     e.item.drag_data = this.data[e.oldIndex]
                 },
@@ -127,12 +128,10 @@ module.exports.Clonable = {
                 dragClass: "drag",
                 ghostClass: "ghost",
                 filter: 'input',
+                preventOnFilter: false,
                 onStart: e => {
                     e.item.drag_data = this.data
                 },
-                onSort: e => {
-                  console.log('s', e);
-                }
             })
             setSelectEvent(this, this.refs.slot)
         })

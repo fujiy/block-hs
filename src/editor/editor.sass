@@ -3,6 +3,7 @@
 
 $text-light: $white
 $text-gray:  $gray-2
+$text-dark:  $gray-4
 
 $var-color:     $cyan-0
 $var-border:    $cyan-1
@@ -46,6 +47,13 @@ $term-transition:   0.2s
   border-top-right-radius: $r
   border-bottom-right-radius: $r
 
+@mixin flex-expr
+  display: inline-flex
+  align-self: stretch
+  align-items: center
+  // height: 100
+  // position: relative
+
 editor
   height: 100vh
   display: grid
@@ -74,7 +82,7 @@ editor
 
     .ghost
       // opacity: 0
-      display: none
+      // display: none
 
   .slot
     display: inline-flex
@@ -93,7 +101,7 @@ editor
     // border-radius: $term-border-radius
 
   .token
-    margin: 4px
+    margin: 5px
     font-size:   $token-font-size
     line-height: $token-line-height
     pointer-events: auto
@@ -118,13 +126,26 @@ statement
   margin: 10px
   padding: 5px
 
+  &.ghost
+    opacity: 0
+    display: block
+
 bind
+  @include flex-expr
+  position: relative
   font-size: 0
+  pointer-events: auto
+  >div
+    @include flex-expr
+    position: relative
   >.token
     margin: 0 6px
 
+  &:hover add-area
+    opacity: 1
+
 bind-left
-  display:  inline-flex
+  @include flex-expr
   position: relative
   border: $expr-border
   border-radius: $expr-border-radius
@@ -148,16 +169,42 @@ bind-left
   //     border-right: none
     // border:        $expr-border
     // border-radius: $expr-border-radius
+
+  add-area
+    position: absolute
+    left: 100%
+    margin-left: 2px
+    margin-top: -1px
+    opacity: 0
+
   >highlight
     margin: -2px
     border-radius: $expr-border-radius
 
+add-area
+  @include flex-expr
+  position: relative
+  cursor: pointer
+  height: 80%
+  .slot
+    width: 10px
+  .token
+    position: absolute
+    top: 0
+    left: 0
+    margin: 0
+    line-height: $token-font-size / 2
+    opacity: .5
+  &:hover .token
+    opacity: 1
+
 bind-var
-  display: inline-flex
+  @include flex-expr
   position: relative
   cursor: pointer
   font-size: 0
   >.slot>.sample
+    @include flex-expr
     border-radius: $expr-border-radius
   >.slot>.sample>.term
     border: $expr-border
@@ -174,23 +221,28 @@ bind-var
     display: inline-flex
 
 expr, pattern
-  display: inline-flex
+  @include flex-expr
   position: relative
   // border: $expr-border
   // border-radius: $expr-border-radius
   pointer-events: none
   cursor: pointer
+  // height: 100%
 
   &.outer
     pointer-events: auto
-    border-radius: $expr-border-radius
-    box-shadow: $term-shadow
     // >.slot>.term
+    &:not(.bracket)
+      box-shadow: $term-shadow
+      border-radius: $expr-border-radius
 
   &.bracket
     background: $bracket-color
     padding: 1px
     pointer-events: none
+    box-shadow: $hole-shadow
+    >.slot>.term
+      box-shadow: $term-shadow
     >highlight.outer
       margin: 1px
   &.left
@@ -207,6 +259,8 @@ expr, pattern
       @include right-border-radius($expr-border-radius)
     &.bracket
       @include right-border-radius($term-border-radius)
+      >.slot>.term
+        @include right-border-radius($expr-border-radius)
   &.outer>.slot>.term, >.slot>.term.drag
     border: $expr-border
     border-radius: $expr-border-radius
@@ -220,6 +274,49 @@ expr, pattern
     &.outer
       margin: 0
       border-radius: $expr-border-radius
+
+pattern
+  &:not(.right)
+    border-right: $expr-border
+    border-color: $var-border
+  .ghost
+    display: inline-flex
+  &:hover handle button
+    opacity: .5
+
+handle
+  display: inline-flex
+  position: relative
+  margin-right: -2px
+  margin-left: 1px
+  align-self: stretch
+  >.grip
+    width: 6px
+    margin: 3px 0
+    background: url('../images/grip.png')
+    background-color: transparent
+    background-size: contain
+    opacity: .5
+  >button.remove
+    position: absolute
+    font-size: 16px
+    line-height: 8px
+    height: 11px
+    padding: 0
+    top: -3px
+    left: -2px
+    border: none
+    background: transparent
+    cursor: pointer
+    color: $text-dark
+    opacity: 0
+    z-index: 10
+    &:hover
+      opacity: 1
+
+    // width:  6px
+    // height: 6px
+
 
 hole
   display: inline-flex
@@ -243,10 +340,6 @@ hole
   >highlight
     margin: -2px
 
-pattern
-  .ghost
-    display: inline-flex
-
 expr-emp
   >type
     >.term
@@ -266,6 +359,8 @@ expr-emp
 app-expr
   display: inline-flex
   position: relative
+  align-items: center
+  // height: 100%
   font-size: 0
   // border-radius: $term-border-radius
   @include left-border-radius($term-border-radius)
@@ -328,19 +423,27 @@ highlight
   bottom: 0
   border: $expr-border
   pointer-events: none
-  box-shadow: $light-1
   border-color: transparent
   transition: .05s
   &.error
     border-color: $error-border
   &.hover
+    box-shadow: $light-1
     border-color: $hover-color
     background-color: rgba(255,255,255,0.2)
     // opacity: 1
 
 sample
+  @include flex-expr
   .sample
     box-shadow: $term-shadow
+
+  handle
+    display: none
+  input-field
+    pointer-events:  none
+    input
+      text-decoration: none
 
 expr-sample
   display: inline-flex
@@ -359,22 +462,22 @@ expr-sample
 
 input-field
   display: inline-flex
-  margin: 0 4px
+  margin: 1px 4px
   border: none
   pointer-events: auto
   input
-    line-height: $token-line-height
-    height:      $token-line-height + 8px
+    // line-height: $token-line-height
+    // height:      $token-line-height + 6px
     // overflow: visible
     padding: 0
-
     margin: 0
     font-size: $token-font-size
     color: $text-light
+    text-decoration: underline
     border: none
     outline: none
     background: transparent
-    width: auto
+    min-width: 5px
 
 editor
   .emp, .term.emp, .slot>.term.emp
@@ -389,3 +492,10 @@ editor
   .type, .term.type, .slot>.term.type
     background:   $type-color
     border-color: $type-border
+
+.fa-grip:before
+  // content: "\f142 \202F \f142 \202F \f142"
+  content: "\f142 \f142"
+  letter-spacing: 0.1em
+.fa.fa-grip-large:before
+  content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142"

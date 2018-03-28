@@ -7,6 +7,10 @@ import jQuery from 'jquery'
 // customElements.define('main-module', class extends HTMLDivElement {constructor(){super()}}, {extends: 'div'})
 
 import riot from 'riot'
+// import 'font-awesome-webpack'
+// require("font-awesome-webpack")
+// import 'font-awesome/css/font-awesome.css'
+// import 'font-awesome/css/font-awesome.css'
 
 import html from 'index.html'
 import style from 'main.sass'

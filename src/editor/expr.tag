@@ -6,18 +6,16 @@ import I from 'Block.Bridge'
 // Bind ------------------------------------------------------------------------
 
 <bind>
-  <bind-left data={data.value0} renew={renewL}/>
-  <span class='token'>=</span>
+  <div>
+    <bind-left data={data.value0} renew={renewL}/>
+    <span class='token'>=</span>
+  </div>
   <expr data={data.value1} outer={true}/>
 
   <script>
     this.mixin(Mixin.Data)
-    this.renewL = d => {
-        this.renew(I.renewLeft(d)(this.data))
-    }
-    this.onrenew = d => {
-        this.renew(I.renewRight(d)(this.data))
-    }
+    this.renewL  = d => this.renew(I.renewLeft(d)(this.data))
+    this.onrenew = d => this.renew(I.renewRight(d)(this.data))
   </script>
 </bind>
 
@@ -28,6 +26,7 @@ import I from 'Block.Bridge'
 </div> -->
   <bind-var data={var}/>
   <pattern each={d, i in args} data={d} right={i == args.length - 1} renew={renewA(i)}/>
+  <add-area renew={addArg}/>
 
   <type-info show={hover} data={var.value1}/>
   <highlight outer={outer} hover={hover}/>
@@ -37,17 +36,30 @@ import I from 'Block.Bridge'
     this.args = I.appToArray(this.opts.data)
     this.var  = this.args.shift()
 
-    this.renewA = i => d => {
-        this.renew(I.renewArgs(i)(d)(this.args)(this.var))
-    }
+    this.onrenew = d => this.renew(I.toApp(d)(this.args))
+    this.renewA  = i => d => this.renew(d ? I.renewArgs(i)(d)(this.args)(this.var)
+                                          : I.deleteArg(i)(this.args)(this.var) )
+    this.addArg  = d => this.renew(I.toApp(this.var)(this.args.concat(d || I.pempty)))
   </script>
 </bind-left>
+
+<add-area onclick={add}>
+  <div ref='slot' class='slot'></div>
+  <span class='token'>+</span>
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Droppable)
+    this.add = () => this.renew(null)
+  </script>
+</add-area>
 
 <bind-var class={func: func}>
   <div ref='slot' class='slot'>
     <div class='sample'>
       <div class='term var'>
-        <span class='token'>{expr.value0}</span>
+        <handle/>
+        <input-field data={expr.value0}/>
+        <!--<span class='token'>{expr.value0}</span>-->
       </div>
       <hole each={t, i in holes} data={t} right={i == holes.length - 1} spine='var' conpact={false}/>
     </div>
@@ -67,6 +79,8 @@ import I from 'Block.Bridge'
     this.holes  = I.arrowToArray(this.scheme.value1)
     this.holes.pop()
     this.func   = this.holes.length > 0
+
+    this.onrenew = s => this.renew(I.renewExpr(I.varC(s))(this.data))
   </script>
 </bind-var>
 
@@ -104,9 +118,7 @@ import I from 'Block.Bridge'
 
     this.name = 'expr'
 
-    this.onrenew = d => {
-        this.renew(I.renewExpr(d)(this.data))
-    }
+    this.onrenew = d => this.renew(I.renewExpr(d)(this.data))
     this.apply = i => d => {
         console.log('apply', i, d);
         console.log(I.fillExprWith(i)(d)(this.data));
@@ -117,10 +129,7 @@ import I from 'Block.Bridge'
         console.log('remove');
         this.renew(I.eempty)
     }
-    this.ondrop = data => {
-        // console.log('drop', data);
-        this.renew(I.assignExpr(this.data)(data))
-    }
+    this.ondrop = d => this.renew(I.assignExpr(this.data)(d))
   </script>
 </expr>
 
@@ -143,6 +152,11 @@ import I from 'Block.Bridge'
     this.ondrop = d => this.renew(d)
   </script>
 </hole>
+
+<handle>
+  <div class='grip'></div>
+  <button if={opts.remove} onclick={opts.remove} class='remove'>×</button>
+</handle>
 
 <highlight class={outer: opts.outer, hover: opts.hover, error: error}>
   <script>
@@ -196,19 +210,19 @@ import I from 'Block.Bridge'
     this.scheme = this.data.value1
 
     this.onrenew = d => {
-        this.renew(I.renewExpr(d)(this.data))
+        this.renew(d && I.renewExpr(d)(this.data))
     }
   </script>
 </pattern>
 
 <var-pattern class='term var'>
+  <handle remove={remove}/>
   <input-field data={data.value0}/>
   <!--<span class='token'>{data.value0}</span>-->
   <script>
     this.mixin(Mixin.Data)
-    this.onrenew = s => {
-        this.renew(I.varC(s))
-    }
+    this.onrenew = s => this.renew(I.varC(s))
+    this.remove  = () => this.renew(null)
   </script>
 </var-pattern>
 
@@ -217,11 +231,7 @@ import I from 'Block.Bridge'
   <script>
     this.mixin(Mixin.Data)
     this.on('mount', () => this.oninput())
-    this.onchange = e => {
-        this.renew(this.refs.input.value)
-    }
-    this.oninput = e => {
-        this.refs.input.style.width = this.refs.input.value.length + 'ch'
-    }
+    this.onchange = e => this.renew(this.refs.input.value)
+    this.oninput  = e => this.refs.input.style.width = this.refs.input.value.length + 'ch'
   </script>
 </input-field>

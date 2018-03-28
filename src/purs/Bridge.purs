@@ -2,7 +2,7 @@ module Block.Bridge where
 
 import Prelude
 import Data.Monoid
-import Data.Array (updateAt, head)
+import Data.Array (updateAt, deleteAt, head)
 import Data.Tuple
 import Data.Maybe (fromMaybe, maybe)
 
@@ -49,8 +49,12 @@ tappToArray = tappToArray_
 arrowToArray :: Type -> Array Type
 arrowToArray = arrowToArray_
 
+toApp :: Expr -> Array Expr -> Expr
+toApp = D.toApp
+
 spure = D.spure
 eempty = D.eempty
+pempty = epure $ Var "_"
 
 bindStmtVar :: Statement -> Expr
 bindStmtVar s = case s of
@@ -83,7 +87,7 @@ tcons t = case t of
 
 errcons :: Error -> String
 errcons e = case e of
-  EOutOfScopeVar   -> "var"
+  EOutOfScopeVar _ -> "var"
   EMisMatch _ _    -> "match"
   EOccursCheck _ _ -> "occurs"
 
@@ -104,6 +108,9 @@ renewExpr e (Info _ t i) = Info e t i
 
 renewArgs :: Int -> Expr -> Array Expr -> Expr -> Expr
 renewArgs i a as b = toApp b $ renewI i a as
+
+deleteArg :: Int -> Array Expr -> Expr -> Expr
+deleteArg i as b = toApp b $ fromMaybe as $ deleteAt i as
 
 appC a b = App a b
 varC s = Var s

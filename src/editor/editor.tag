@@ -57,6 +57,7 @@ import I from 'Block.Bridge'
         console.log(newData);
     }
     this.renewS = i => d => {
+        console.log('renew', i, d);
         const r = I.typeCheck(opts.lib)(this.data)(d)
         // console.log(r);
         if (r.updated) this.renew(I.renewI(i)(r.s)(this.data))
