@@ -53,6 +53,8 @@ import I from 'Block.Bridge'
     this.mixin(Mixin.Sortable)
     this.name = 'module'
 
+    this.listData = this.data
+
     this.onsort = newData => {
         console.log(newData);
     }

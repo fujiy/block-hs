@@ -2,7 +2,7 @@ module Block.Bridge where
 
 import Prelude
 import Data.Monoid
-import Data.Array (updateAt, deleteAt, head, length)
+import Data.Array (updateAt, deleteAt, modifyAt, head, length)
 import Data.Tuple
 import Data.Maybe (fromMaybe, maybe)
 
@@ -27,12 +27,18 @@ prelude = typeChecks []
 
 sampleExprs :: Array Expr
 sampleExprs = [idefault (spure' $ Id "Int") (Num 0),
-               idefault (spure $ arrow ta tb) (Lambda [idefault ta' $ Var "a"] $ idefault tb' Empty)]
+               idefault (spure $ arrow ta tb) (Lambda [ea] ebe),
+               idefault ta' $ If (idefault (spure' $ Id "Bool") Empty) eae eae,
+               idefault tb' $ Case eae [Tuple ea ebe]]
 
 ta = tpure $ TVar $ Named "a"
 tb = tpure $ TVar $ Named "b"
 ta' = spure ta
 tb' = spure tb
+ea  = idefault ta' $ Var "a"
+eae = idefault ta' Empty
+ebe = idefault tb' Empty
+-- eb = idefault tb' Empty
 
 exprB = epure $ App exprA (epure $ Var "fuga")
 exprA = epure $ App (epure $ Var "hoge") (epure $ Num 0)
@@ -60,7 +66,11 @@ toApp = D.toApp
 
 spure = D.spure
 eempty = D.eempty
+
+pempty :: Expr
 pempty = epure $ Var "_"
+aempty :: Tuple Expr Expr
+aempty = Tuple pempty D.eempty
 
 bindStmtVar :: Statement -> Expr
 bindStmtVar s = case s of
@@ -81,6 +91,8 @@ econs e = case e of
     App _ _    -> "app"
     Num _      -> "num"
     Lambda _ _ -> "lam"
+    If _ _ _   -> "ift"
+    Case _ _   -> "cas"
     Empty      -> "emp"
 
 tcons :: TypeA -> String
@@ -100,6 +112,9 @@ errcons e = case e of
 
 renewI :: forall a. Int -> a -> Array a -> Array a
 renewI i x xs = fromMaybe xs $ updateAt i x xs
+
+deleteI :: forall a. Int -> Array a -> Array a
+deleteI i xs = fromMaybe xs $ deleteAt i xs
 
 renewBindStmt :: Int -> Bind -> Statement -> Statement
 renewBindStmt i b (BindStmt bs) = BindStmt $ renewI i b bs
@@ -125,7 +140,14 @@ renewLambda i a as b = epure $ Lambda (renewI i a as) b
 deleteLambda :: Int -> Array Expr -> Expr -> Expr
 deleteLambda i as b = lambdaC (fromMaybe as $ deleteAt i as) b
 
+renewFirsts  :: forall a b. Int -> a -> Array (Tuple a b) -> Array (Tuple a b)
+renewFirsts i a ts  = fromMaybe ts $ modifyAt i (\(Tuple _ b) -> Tuple a b) ts
+renewSeconds :: forall a b. Int -> b -> Array (Tuple a b) -> Array (Tuple a b)
+renewSeconds i b ts = fromMaybe ts $ modifyAt i (\(Tuple a _) -> Tuple a b) ts
+
 appC    = App
 varC    = Var
+ifC     = If
+caseC   = Case
 lambdaC [] b = b
 lambdaC as b = epure $ Lambda as b

@@ -53,10 +53,10 @@ module.exports.Sortable = {
                 dragClass: "drag",
                 ghostClass: "ghost",
                 onStart: e => {
-                    e.item.drag_data = this.data[e.oldIndex]
+                    e.item.drag_data = this.listData[e.oldIndex]
                 },
                 onSort: e => {
-                    const newData = this.data.slice()
+                    const newData = this.listData.slice()
                     if (e.from == this.refs.list) newData.splice(e.oldIndex, 1)
                     if (e.to   == this.refs.list) newData.splice(e.newIndex, 0, e.item.drag_data)
                     this.onsort(newData)

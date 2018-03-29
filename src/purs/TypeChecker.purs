@@ -14,6 +14,7 @@ import Data.Array.NonEmpty as NE
 import Data.List as L
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map as Map
+import Data.String (charAt)
 
 
 import Block.Data
@@ -75,7 +76,7 @@ typeChecks lib ss =
 typeCheck :: Statements -> Statements -> Statement -> {s :: Statement, updated :: Boolean}
 typeCheck lib ss s =
     let s' = interpret (mconcat $ map envirs $ lib <> ss) $ inferStmt s
-    in  {s: s', updated: (s /= s')}
+    in  {s: s', updated: (envirs s /= envirs s')}
 
 inferStmt :: Statement -> Interpreter Statement
 inferStmt st = case st of
@@ -133,6 +134,19 @@ inferExpr t (Info e _ _) = case e of
     Num _ -> do
         {type: t', infos: i} <- unify t (tpure $ Id "Int")
         pure $ Info e (spure t') i
+    If c a b -> do
+        c' <- inferExpr (tpure $ Id "Bool") c
+        a' <- inferExpr t a
+        b' <- inferExpr t b
+        pure $ idefault (spure t) $ If c' a' b'
+    Case a as -> do
+        tv  <- newTVarT
+        a'  <- inferExpr tv a
+        as' <- forM as \(Tuple p b) -> do
+            p' <- inferParam tv p
+            b' <- localEnv (paramVars p') $ inferExpr t b
+            pure $ Tuple p' b'
+        pure $ idefault (spure t) $ Case a' as'
     Empty -> pure $ idefault (spure t) e
 
 --------------------------------------------------------------------------------
@@ -152,6 +166,8 @@ binds b = let Info e sc _ = bindVar b
 
 paramVars :: Expr -> Envir
 paramVars (Info e sc _) = case e of
+    Var s | charAt 0 s == Just '_'
+          -> Map.empty
     Var s -> Map.singleton s sc
     _     -> Map.empty
 
@@ -279,6 +295,9 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
         e' <- case e of
             App a b     -> App <$> goExpr a <*> goExpr b
             Lambda as b -> Lambda <$> mapM goExpr as <*> goExpr b
+            If c a b    -> If <$> goExpr c <*> goExpr a <*> goExpr b
+            Case a as   -> Case <$> goExpr a <*> forM as
+                               \(Tuple p b) -> Tuple <$> goExpr p <*> goExpr b
             _ -> pure e
         sc' <- goScheme sc
         pure $ Info e' sc' i
@@ -291,6 +310,9 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
 
 mapM :: forall m a b. Monad m => (a -> m b) -> Array a -> m (Array b)
 mapM f = map f >>> sequence
+
+forM :: forall m a b. Monad m => Array a -> (a -> m b) -> m (Array b)
+forM = flip mapM
 
 mconcat :: forall m. Monoid m => Array m -> m
 mconcat = foldr (<>) mempty

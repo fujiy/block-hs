@@ -86,20 +86,23 @@ import I from 'Block.Bridge'
 
 // Expr ------------------------------------------------------------------------
 
-<expr class={left: opts.left, right: opts.right, outer: outer, func: func, bracket: bracket, factor: factor}>
+<expr class={left: opts.left, right: opts.right, outer: outer, func: func,
+             bracket: bracket, factor: factor, hole: opts.hole}>
   <div ref='slot' class='slot'>
-    <expr-emp   if={cons == 'emp'} data={scheme.value1}/>
-    <var-expr   if={cons == 'var'} data={expr}/>
-    <app-expr   if={cons == 'app'} data={expr} spine={spine} outer={outer && !func}/>
+    <expr-emp    if={cons == 'emp'} data={scheme.value1}/>
+    <var-expr    if={cons == 'var'} data={expr}/>
+    <app-expr    if={cons == 'app'} data={expr} spine={spine} outer={outer && !func}/>
     <expr-lambda if={cons == 'lam'} data={expr} renew={renewE}/>
-    <num-expr if={cons == 'num'} data={expr}/>
+    <num-expr    if={cons == 'num'} data={expr}/>
+    <expr-if     if={cons == 'ift'} data={expr}/>
+    <expr-case   if={cons == 'cas'} data={expr}/>
   </div>
   <hole if={outer && func && !(factor && opts.left)} spine={spine} each={t, i in holes}
         data={t} right={i == holes.length - 1} renew={apply(i)}/>
 
   <infos show={hover} data={infos}/>
   <type-info show={hover} data={scheme}/>
-  <highlight outer={outer} hover={hover} infos={infos}/>
+  <highlight hover={hover} infos={infos}/>
 
   <script>
     this.mixin(Mixin.Data)
@@ -113,12 +116,12 @@ import I from 'Block.Bridge'
     this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
     this.func    = this.holes.length > 0
     this.app     = this.cons == 'app' && !opts.spine
-    this.factor  = this.cons == 'lam'
-    this.bracket = opts.bracket && (this.func || this.app)
+    this.factor  = this.cons == 'lam' || this.cons == 'ift'
+    this.bracket = (opts.bracket || opts.hole) && (this.func || this.app)
                 || this.factor && (opts.left)
     this.outer   = opts.outer || this.bracket || this.app
     const spineC = I.econs(I.appToArray(this.data)[0].value0)
-    this.spine   = opts.spine || (spineC == 'lam' ? 'bra' : spineC)
+    this.spine   = opts.spine || (spineC == 'lam' || spineC == 'ift' ? 'bra' : spineC)
 
     this.name = 'expr'
 
@@ -163,7 +166,7 @@ import I from 'Block.Bridge'
   <button if={opts.remove} onclick={opts.remove} class='remove'>×</button>
 </handle>
 
-<highlight class={outer: opts.outer, hover: opts.hover, error: error}>
+<highlight class={hover: opts.hover, error: error}>
   <script>
     this.error = opts.infos && opts.infos.errors && opts.infos.errors.length > 0
   </script>
@@ -186,7 +189,7 @@ import I from 'Block.Bridge'
     <add-area renew={addArg}/>
     <span class='token'>→</span>
   </div>
-  <expr data={expr} bracket={true} right={true}>
+  <expr data={expr} hole={true} right={true}/>
 
   <script>
     this.mixin(Mixin.Data)
@@ -213,6 +216,64 @@ import I from 'Block.Bridge'
   <span class='token'>{opts.data.value0}</span>
   this.mixin(Mixin.Data)
 </num-expr>
+
+<expr-if class='term ift'>
+  <span class='token'>if</span>
+  <expr data={c} hole={true}/>
+  <span class='token'>then</span>
+  <expr data={a} hole={true} renew={renewA}/>
+  <span class='token'>else</span>
+  <expr data={b} hole={true} right={true} renew={renewB}/>
+  <script>
+    this.mixin(Mixin.Data)
+    this.c = this.data.value0
+    this.a = this.data.value1
+    this.b = this.data.value2
+    this.onrenew = d => this.renew(I.ifC(d)(this.a)(this.b))
+    this.renewA  = d => this.renew(I.ifC(this.c)(d)(this.b))
+    this.renewB  = d => this.renew(I.ifC(this.c)(this.a)(d))
+  </script>
+</expr-if>
+
+<expr-case class='term cas'>
+  <div class='left'>
+    <span class='token'>case</span>
+    <expr data={a} hole={true}/>
+    <span class='token'>of</span>
+  </div>
+  <div ref="list" class='list'>
+    <case-alter each={d, i in as} data={d} renew={renewA(i)} remove={as1 && deleteA(i)}/>
+  </div>
+  <button onclick={addA} class='add'>+</button>
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Sortable)
+    this.name = 'alter'
+    this.a   = this.data.value0
+    this.as  = this.listData = this.data.value1
+    this.as1 = this.as.length > 1
+    this.onrenew = d => this.renew(I.caseC(d)(this.as))
+    this.renewA  = i => d => this.renew(I.caseC(this.a)(I.renewI(i)(d)(this.as)))
+    this.deleteA = i => d => this.renew(I.caseC(this.a)(I.deleteI(i)(this.as)))
+    // this.renewP = i => d => this.renew(I.caseC(this.a)(I.renewFirsts(i)(d)(this.as)))
+    // this.renewB = i => d => this.renew(I.caseC(this.a)(I.renewSeconds(i)(d)(this.as)))
+    this.addA   = () => this.renew(I.caseC(this.a)(this.as.concat(I.aempty)))
+    this.onsort = d => this.renew(I.caseC(this.a)(d))
+  </script>
+</expr-case>
+
+<case-alter class={hover: hover}>
+  <button if={opts.remove} onclick={opts.remove} class='remove'>×</button>
+  <pattern data={p} outer={true} renew={renewP}/>
+  <span class='token'>→</span>
+  <expr data={b} outer={true}/>
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Selectable)
+    this.p = this.data.value0
+    this.b = this.data.value1
+  </script>
+</case-alter>
 
 // Pattern ---------------------------------------------------------------------
 

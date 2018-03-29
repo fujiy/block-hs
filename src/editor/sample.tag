@@ -23,6 +23,8 @@ import I from 'Block.Bridge'
   <div class='slot' ref='slot'>
     <num-expr    if={cons == 'num'} data={expr}/>
     <expr-lambda if={cons == 'lam'} data={expr}/>
+    <expr-if     if={cons == 'ift'} data={expr}/>
+    <expr-case   if={cons == 'cas'} data={expr}/>
   </div>
 
   <type-info show={hover} data={scheme}/>

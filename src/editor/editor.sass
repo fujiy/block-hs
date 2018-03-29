@@ -9,8 +9,10 @@ $var-color:     $cyan-0
 $var-border:    $cyan-1
 $num-color:     $blue-0
 $num-border:    $blue-1
-$lambda-color:   $purple-0
-$lambda-border:  $purple-1
+$lambda-color:  $purple-0
+$lambda-border: $purple-1
+$if-color:      $pink-0
+$if-border:     $pink-1
 $type-color:    $light-green-0
 $type-border:   $light-green-1
 $bracket-color: $blue-gray-0
@@ -34,6 +36,8 @@ $term-shadow:       $shadow-1
 $term-shadow-hover: $shadow-2
 $hole-shadow:       $shadow-1-inset
 $term-transition:   0.2s
+
+$indent: 30px
 
 
 @function stud-right($c)
@@ -72,6 +76,7 @@ editor
       grid-column: 1/2
       grid-row: 2/4
       background: $gray-0
+      overflow: scroll
       >p
         margin: 5px
 
@@ -93,9 +98,9 @@ editor
     height: 100%
 
   .term
-    display: inline-flex
+    // display: inline-flex
+    @include flex-expr
     position: relative
-    align-items: center
     height: 100%
     // z-index: 1
     color: $text-light
@@ -118,6 +123,20 @@ editor
     // pointer-events: none
     // background: red
     // opacity: 0.4
+
+button.remove, button.add
+  border: none
+  background: transparent
+  cursor: pointer
+  color: $text-dark
+  font-size: 16px
+  line-height: 8px
+  height: 12px
+  padding: 0
+  opacity: 0.5
+  z-index: 10
+  &.remove:hover, &.add:hover
+    opacity: 1
 
 main-module
   display: block
@@ -148,7 +167,7 @@ bind
     opacity: 1
 
 bind-left
-  @include flex-expr
+  // @include flex-expr
   position: relative
   border: $expr-border
   border-radius: $expr-border-radius
@@ -168,7 +187,7 @@ bind-left
     position: absolute
     left: 100%
     margin-left: 2px
-    margin-top: -1px
+    margin-top: -2px
     opacity: 0
 
   >highlight
@@ -229,6 +248,11 @@ expr, pattern
     &:not(.bracket)
       box-shadow: $term-shadow
       border-radius: $expr-border-radius
+    >highlight
+      margin: 0
+      border-radius: $expr-border-radius
+  &.hole
+    pointer-events: auto
 
   &.bracket
     background: $bracket-color
@@ -237,7 +261,8 @@ expr, pattern
     box-shadow: $hole-shadow
     >.slot>.term
       box-shadow: $term-shadow
-    >highlight.outer
+      pointer-events: auto
+    >highlight
       margin: 1px
   &.left
     &.bracket
@@ -274,13 +299,10 @@ expr, pattern
 
   >highlight
     margin: -2px
-    &.outer
-      margin: 0
-      border-radius: $expr-border-radius
 
 pattern
   pointer-events: auto
-  &:not(.right)
+  &:not(.right):not(.outer)
     border-right: $expr-border
     border-color: $var-border
   .ghost
@@ -303,18 +325,9 @@ handle
     opacity: .5
   >button.remove
     position: absolute
-    font-size: 16px
-    line-height: 8px
-    height: 11px
-    padding: 0
     top: -3px
     left: -2px
-    border: none
-    background: transparent
-    cursor: pointer
-    color: $text-dark
     opacity: 0
-    z-index: 10
     &:hover
       opacity: 1
 
@@ -355,9 +368,6 @@ expr-emp
       color:        $text-gray
 
 app-expr
-  display: inline-flex
-  position: relative
-  align-items: center
   // height: 100%
   font-size: 0
   // border-radius: $term-border-radius
@@ -372,8 +382,7 @@ app-expr
     border: $expr-border
     border-radius: $expr-border-radius
 
-expr-lambda
-  @include flex-expr
+expr-lambda.term
   >.left
     @include flex-expr
     position: relative
@@ -394,6 +403,59 @@ expr-lambda
 
   &:hover add-area
     opacity: 1
+
+expr-if.term
+  >expr
+    border-left:  $expr-border
+    border-right: $expr-border
+    border-color: $if-border
+    &.right
+      border-right: none
+
+expr-case.term
+  flex-direction: column
+  align-items: flex-start
+  .left
+    @include flex-expr
+    >expr
+      border: $expr-border
+      border-top: none
+      border-color: $if-border
+  .list
+    @include flex-expr
+    flex-direction: column
+    .ghost
+      display: inline-flex
+      opacity: 0
+  >button.add
+    position: absolute
+    width: $indent
+    // text-align: center
+    bottom: 0
+    opacity: 0
+  &:hover>button
+    opacity: .5
+
+
+case-alter
+  @include flex-expr
+  position: relative
+  // margin: 2px
+  padding: 1px
+  padding-left: $indent
+  border-radius: $term-border-radius
+  transition: $term-transition box-shadow
+  &.hover, &:hover
+    box-shadow: $term-shadow-hover
+    >button
+      opacity: .5
+  >.remove
+    position: absolute
+    left: $indent / 2 - 5px
+    top: 0
+    bottom: 4px
+    margin: auto 0
+    opacity: 0
 
 type
   display: inline-flex
@@ -525,6 +587,9 @@ editor
   .lam, .term.lam, .slot>.term.lam
     background:   $lambda-color
     border-color: $lambda-border
+  .ift, .term.ift, .slot>.term.ift, .cas, .term.cas, .slot>.term.cas
+    background:   $if-color
+    border-color: $if-border
   .type, .term.type, .slot>.term.type
     background:   $type-color
     border-color: $type-border

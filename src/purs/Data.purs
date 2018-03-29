@@ -4,6 +4,7 @@ import Prelude
 import Data.Semigroup
 import Data.Eq
 import Data.Monoid
+import Data.Tuple
 import Data.Array (foldl)
 import Data.Array.NonEmpty (NonEmptyArray, snoc, cons, toArray, head)
 
@@ -37,7 +38,7 @@ tof (Info _ t _) = t
 data Statement = BindStmt (Array Bind)
 type Statements = Array Statement
 
-derive instance eqStatement :: Eq Statement
+-- derive instance eqStatement :: Eq Statement
 
 -- Expr ------------------------------------------------------------------------
 
@@ -46,24 +47,24 @@ type ExprA = InfoA Scheme ExprC
 data ExprC e = Var String
            -- | Cons String
              | App e e
-             | Lambda (Array Expr) Expr
+             | Lambda (Array e) e
              | Num Int
            -- | Oper Expr (Maybe Expr) (Maybe Expr)
-           -- | If Expr Expr Expr
-           -- | Case Expr (Array (Tuple Expr Expr))
+             | If e e e
+             | Case e (Array (Tuple e e))
            -- | Let (Array Bind) Expr
            -- | TypeAnnot Expr Scheme
              | Empty
              -- | Arg
 data Bind = Bind Expr Expr
 
-instance eq1ExprC :: Eq1 ExprC where
-    eq1 (Var xs)    (Var ys)    = xs == ys
-    eq1 (App ax bx) (App ay by) = ax == ay && bx == by
-    eq1 (Num x)     (Num y)     = x == y
-    eq1 Empty       Empty       = true
-    eq1 _           _           = false
-derive instance eqBind :: Eq Bind
+-- instance eq1ExprC :: Eq1 ExprC where
+--     eq1 (Var xs)    (Var ys)    = xs == ys
+--     eq1 (App ax bx) (App ay by) = ax == ay && bx == by
+--     eq1 (Num x)     (Num y)     = x == y
+--     eq1 Empty       Empty       = true
+--     eq1 _           _           = false
+-- derive instance eqBind :: Eq Bind
 
 eempty :: Expr
 eempty = idefault sempty Empty
