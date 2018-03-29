@@ -86,7 +86,7 @@ import I from 'Block.Bridge'
 
 // Expr ------------------------------------------------------------------------
 
-<expr class={left: opts.left, right: opts.right, outer: outer, func: func, bracket: bracket}>
+<expr class={left: opts.left, right: opts.right, outer: outer, func: func, bracket: bracket, factor: factor}>
   <div ref='slot' class='slot'>
     <expr-emp   if={cons == 'emp'} data={scheme.value1}/>
     <var-expr   if={cons == 'var'} data={expr}/>
@@ -94,7 +94,7 @@ import I from 'Block.Bridge'
     <expr-lambda if={cons == 'lam'} data={expr} renew={renewE}/>
     <num-expr if={cons == 'num'} data={expr}/>
   </div>
-  <hole if={outer && func} spine={spine} each={t, i in holes}
+  <hole if={outer && func && !(factor && opts.left)} spine={spine} each={t, i in holes}
         data={t} right={i == holes.length - 1} renew={apply(i)}/>
 
   <infos show={hover} data={infos}/>
@@ -113,9 +113,12 @@ import I from 'Block.Bridge'
     this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
     this.func    = this.holes.length > 0
     this.app     = this.cons == 'app' && !opts.spine
+    this.factor  = this.cons == 'lam'
     this.bracket = opts.bracket && (this.func || this.app)
+                || this.factor && (opts.left)
     this.outer   = opts.outer || this.bracket || this.app
-    this.spine   = opts.spine || I.econs(I.appToArray(this.data)[0].value0)
+    const spineC = I.econs(I.appToArray(this.data)[0].value0)
+    this.spine   = opts.spine || (spineC == 'lam' ? 'bra' : spineC)
 
     this.name = 'expr'
 
@@ -183,7 +186,7 @@ import I from 'Block.Bridge'
     <add-area renew={addArg}/>
     <span class='token'>→</span>
   </div>
-  <expr data={expr} bracket={true}>
+  <expr data={expr} bracket={true} right={true}>
 
   <script>
     this.mixin(Mixin.Data)

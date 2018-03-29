@@ -14,6 +14,7 @@ $lambda-border:  $purple-1
 $type-color:    $light-green-0
 $type-border:   $light-green-1
 $bracket-color: $blue-gray-0
+$bracket-border: $blue-gray-1
 $empty-color:   $gray-0
 $empty-border:  $gray-2
 $error-color:   $strong-red-0
@@ -239,6 +240,8 @@ expr, pattern
     >highlight.outer
       margin: 1px
   &.left
+    &.bracket
+      @include left-border-radius($term-border-radius)
     >.slot>.term
       @include left-border-radius($term-border-radius)
       border-right: $expr-border
@@ -261,6 +264,13 @@ expr, pattern
     >.slot>.term
       @include right-border-radius(0)
       pointer-events: auto
+    &.factor:not(.left)
+      .right
+        >.slot>.term, >highlight
+          @include right-border-radius(0)
+  &.factor.left
+    >.slot>.term
+      @include right-border-radius($expr-border-radius)
 
   >highlight
     margin: -2px
@@ -313,7 +323,7 @@ handle
 
 
 hole
-  display: inline-flex
+  @include flex-expr
   position: relative
   border-top:    $expr-border
   border-bottom: $expr-border
@@ -503,6 +513,9 @@ editor
   .emp, .term.emp, .slot>.term.emp
     background:   $empty-color
     border-color: $empty-border
+  .bra, .term.bra, .slot>.term.bra
+    background:   $bracket-color
+    border-color: $bracket-border
   .var, .term.var, .slot>.term.var
     background:   $var-color
     border-color: $var-border
