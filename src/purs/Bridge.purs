@@ -157,6 +157,7 @@ renewSeconds i b ts = fromMaybe ts $ modifyAt i (\(Tuple a _) -> Tuple a b) ts
 
 appC    = App
 varC    = Var
+numC    = Num
 ifC     = If
 caseC   = Case
 operC o a b = Oper o (Just a) (Just b)

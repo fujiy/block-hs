@@ -265,8 +265,13 @@ import I from 'Block.Bridge'
 </oper-var>
 
 <num-expr class='term num'>
-  <span class='token'>{opts.data.value0}</span>
-  this.mixin(Mixin.Data)
+  <handle/>
+  <input-field data={data.value0}/>
+  <!--<span class='token'>{opts.data.value0}</span>-->
+  <script>
+    this.mixin(Mixin.Data)
+    this.onrenew = v => this.renew(I.numC(v))
+  </script>
 </num-expr>
 
 <expr-if class='term ift'>

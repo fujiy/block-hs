@@ -40,7 +40,7 @@ import I from 'Block.Bridge'
     this.cons   = I.econs(this.expr)
     this.scheme = this.data.value1
 
-    this.on('mount', () => $(this.root).find('num-expr .token').text('Int'))
+    this.on('mount', () => $(this.root).find('num-expr input').val('Int'))
   </script>
 
 </expr-sample>
