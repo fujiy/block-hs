@@ -114,19 +114,21 @@ type TypeA = InfoA Kind TypeC
 data TypeC t = Id String
              | TVar TVar
              | TApp t t
-             | Arrow
+             | TOper String (Maybe t) (Maybe t)
+             -- | Arrow
              | Unknown
 data TVar = Named String
           | Temp Int
 type Constraint = Type
 
 instance eq1TypeC :: Eq1 TypeC where
-    eq1 (Id xs)      (Id ys)      = xs == ys
-    eq1 (TVar vx)    (TVar vy)    = vx == vy
-    eq1 (TApp ax bx) (TApp ay by) = ax == ay && bx == by
-    eq1 Arrow        Arrow        = true
-    eq1 Unknown      Unknown      = true
-    eq1 _            _            = false
+    eq1 (Id xs)          (Id ys)          = xs == ys
+    eq1 (TVar vx)        (TVar vy)        = vx == vy
+    eq1 (TApp ax bx)     (TApp ay by)     = ax == ay && bx == by
+    eq1 (TOper xs ax bx) (TOper ys ay by) = xs == ys && ax == ay && bx == by
+    -- eq1 Arrow            Arrow            = true
+    eq1 Unknown          Unknown          = true
+    eq1 _                _                = false
 derive instance eqTVar :: Eq TVar
 derive instance ordTVar :: Ord TVar
 
@@ -137,7 +139,8 @@ tpure :: TypeA -> Type
 tpure t = Info t Base mempty
 
 arrow :: Type -> Type -> Type
-arrow a b = tpure $ TApp (tpure $ TApp (tpure Arrow) a) b
+arrow a b = tpure $ TOper "->" (Just a) (Just b)
+-- arrow a b = tpure $ TApp (tpure $ TApp (tpure Arrow) a) b
 
 tappToArray :: Type -> NonEmptyArray Type
 tappToArray x@(Info t _ _) = case t of
@@ -149,7 +152,8 @@ tappToArray_ = tappToArray >>> toArray
 
 arrowToArray :: Type -> NonEmptyArray Type
 arrowToArray x@(Info t _ _) = case t of
-    TApp (Info (TApp (Info Arrow _ _) a) _ _) b
+    TOper "->" (Just a) (Just b)
+    -- TApp (Info (TApp (Info Arrow _ _) a) _ _) b
         -> a `cons` arrowToArray b
     _   -> pure x
 

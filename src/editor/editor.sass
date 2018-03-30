@@ -17,6 +17,8 @@ $if-color:      $pink-0
 $if-border:     $pink-1
 $type-color:    $light-green-0
 $type-border:   $light-green-1
+$type-oper-color:  $green-0
+$type-oper-border: $green-1
 $bracket-color: $blue-gray-0
 $bracket-border: $blue-gray-1
 $empty-color:   $gray-0
@@ -115,7 +117,7 @@ editor
     font-size:   $token-font-size
     line-height: $token-line-height
     pointer-events: auto
-
+    white-space: nowrap
 
   .ghost
     // opacity: 0
@@ -301,6 +303,11 @@ expr, pattern
     >.slot>.term
       @include right-border-radius($expr-border-radius)
 
+  &:not(.outer)
+    type-info
+      left: -2px
+      top: calc(100% + 2px)
+
   >highlight
     margin: -2px
 
@@ -369,11 +376,14 @@ hole
   >highlight
     margin: -2px
 
+  type-info
+    left: -2px
+    top: calc(100% + 2px)
+
 expr-emp
   pointer-events: auto
+  overflow: hidden
   >type
-    >.term
-      border: none
     .term.type
       border-color: $empty-border
       background:   $empty-color
@@ -446,6 +456,9 @@ oper-var.term
   border-left: $expr-border
   >highlight
     margin: -2px
+  type-info
+    left: -2px
+    top: calc(100% + 2px)
 
 expr-if.term
   >expr
@@ -503,9 +516,28 @@ type
   display: inline-flex
   position: relative
 
-  >.term
-    border: $expr-border
-    border-radius: $expr-border-radius
+  &.outer
+    >.term
+      border: $expr-border
+      border-radius: $expr-border-radius
+  &.bracket
+    background: $bracket-color
+    padding: 1px
+  &.left
+    >.term
+      @include left-border-radius($term-border-radius)
+  &.right
+    >.term
+      @include right-border-radius($term-border-radius)
+
+  &:not(.outer)>type-oper>.left>.term
+    @include left-border-radius(0)
+
+type-oper.term
+  >.opt
+    @include flex-expr
+    border-right: $expr-border
+    border-left: $expr-border
 
 type-info
   position: absolute
@@ -643,6 +675,9 @@ editor
   .type, .term.type, .slot>.term.type
     background:   $type-color
     border-color: $type-border
+  .opt, .term.opt, .slot>.term.opt
+    background:   $type-oper-color
+    border-color: $type-oper-border
 
 .fa-grip:before
   // content: "\f142 \202F \f142 \202F \f142"

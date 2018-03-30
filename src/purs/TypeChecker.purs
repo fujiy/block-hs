@@ -180,7 +180,7 @@ inferExpr t (Info e _ _) = case e of
         tr  <- newTVarT
         {type: t', infos: i} <- unify t $ arrow tp0 $ arrow tp1 tr
         o' <- inferExpr t' o
-        pure $ idefault (spure t') $ Oper o' Nothing Nothing
+        pure $ Info (Oper o' Nothing Nothing) (spure t') i
     Empty -> pure $ idefault (spure t) e
 
 --------------------------------------------------------------------------------
@@ -247,6 +247,9 @@ evalType x@(Info t k i) = case t of
     TApp a b -> do
         t' <- TApp <$> evalType a <*> evalType b
         pure $ Info t' k i
+    TOper s a b -> do
+        t' <- TOper s <$> sequence (map evalType a) <*> sequence (map evalType b)
+        pure $ Info t' k i
     _     -> pure x
 
 deepEvalType :: Type -> Infer Type
@@ -273,9 +276,9 @@ generalizeAll (Forall _ t) = Forall (tvarsOf t) t
 
 unify :: Type -> Type -> Infer {type :: Type, infos :: Infos}
 unify a b = do
-    a'@(Info ta _ _) <- deepEvalType a
-    b'@(Info tb _ _) <- deepEvalType b
-    case Tuple ta tb of
+    a'@(Info tx _ _) <- deepEvalType a
+    b'@(Info ty _ _) <- deepEvalType b
+    case Tuple tx ty of
         Tuple Unknown _ -> success b
         Tuple _ Unknown -> success a
         Tuple (TVar x) (TVar y) | x > y -> do
@@ -298,12 +301,24 @@ unify a b = do
             else do
                 assignTVar y a
                 success a
-        Tuple Arrow Arrow -> success a
+        -- Tuple Arrow Arrow -> success a
         Tuple (Id xs) (Id ys) | xs == ys -> success a
-        Tuple (TApp ax ay) (TApp bx by) -> do
-            {type: tx, infos: ix} <- unify ax bx
-            {type: ty, infos: iy} <- unify ay by
-            pure {type: tpure $ TApp tx ty, infos: ix <> iy}
+        Tuple (TApp ax bx) (TApp ay by) -> do
+            {type: ta, infos: ia} <- unify ax ay
+            {type: tb, infos: ib} <- unify bx by
+            pure {type: tpure $ TApp ta tb, infos: ia <> ib}
+        Tuple (TOper xs Nothing Nothing) (TOper ys Nothing Nothing) | xs == ys -> success a
+        Tuple (TOper xs (Just ax) Nothing) (TOper ys (Just ay) Nothing) | xs == ys -> do
+            {type: ta, infos: ia} <- unify ax ay
+            pure {type: tpure $ TOper xs (Just ta) Nothing, infos: ia}
+        Tuple (TOper xs (Just ax) (Just bx)) (TOper ys (Just ay) (Just by)) | xs == ys -> do
+            {type: ta, infos: ia} <- unify ax ay
+            {type: tb, infos: ib} <- unify bx by
+            pure {type: tpure $ TOper xs (Just ta) (Just tb), infos: ia <> ib}
+        -- Tuple (TOper ao (Just ax) Nothing) (TOper bo (Just bx) Nothing) -> do
+        --     {type: to, infos: io} <- unify ao bo
+        --     {type: tx, infos: ix} <- unify ax bx
+        --     pure {type: tpure $ TOper to (Just tx) Nothing, infos: io <> ix}
         _ -> error b $ EMisMatch a' b'
   where
     occursCheck :: TVar -> Type -> Boolean

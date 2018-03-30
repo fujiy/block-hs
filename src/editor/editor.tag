@@ -71,3 +71,16 @@ import I from 'Block.Bridge'
     }
   </script>
 </main-module>
+
+String.prototype.escape = function() {
+  return this.replace(/[&'`"<>]/g, function(match) {
+    return {
+      '&': '&amp;',
+      "'": '&#x27;',
+      '`': '&#x60;',
+      '"': '&quot;',
+      '<': '&lt;',
+      '>': '&gt;',
+    }[match]
+  });
+}

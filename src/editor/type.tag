@@ -1,10 +1,12 @@
+// Type
 
+import Mixin from './mixin.js'
 import I from 'Block.Bridge'
 
 // Scheme
 
 <scheme>
-  <type data={type}/>
+  <type data={type} outer={true}/>
 
   <script>
     this.type = opts.data.value1
@@ -13,15 +15,20 @@ import I from 'Block.Bridge'
 
 // Type
 
-<type>
+<type class={outer: outer, left: opts.left, right: opts.right, hole: opts.hole}>
   <type-id      if={cons == 'id'}  data={type}/>
   <type-var     if={cons == 'var'} data={type}/>
-  <type-arrow   if={cons == 'arr'} data={opts.data}/>
+  <type-oper    if={cons == 'ope'} data={type}/>
   <type-unknown if={cons == 'unk'} data={type}/>
 
   <script>
-    this.type = opts.data.value0
+    this.mixin(Mixin.Data)
+    this.type = this.data.value0
     this.cons = I.tcons(this.type)
+    this.oper    = this.cons == 'ope'
+    // this.app     = this.cons == 'app' && !opts.spine
+    // this.bracket = (opts.bracket || opts.hole) && this.oper
+    this.outer   = opts.outer || this.bracket
   </script>
 </type>
 
@@ -33,15 +40,19 @@ import I from 'Block.Bridge'
   <span class='token'>{opts.data.value0.value0}</span>
 </type-var>
 
-<type-arrow class='term type'>
-  <type data={args[0]}/>
-  <span class='token'>→</span>
-  <type data={args[1]}/>
+<type-oper class='term opt'>
+  <type data={a} hole={true} left={true}/>
+  <div class='term opt'>
+    <span class='token'>{s}</span>
+  </div>
+  <type data={b} hole={true} right={true}/>
   <script>
-    this.args = I.tappToArray(opts.data)
-    this.args.shift()
+    this.mixin(Mixin.Data)
+    this.s = this.data.value0
+    this.a = this.data.value1.value0
+    this.b = this.data.value2.value0
   </script>
-</type-arrow>
+</type-oper>
 
 <type-unknown class='term type'>
   <span class='token'>?</span>

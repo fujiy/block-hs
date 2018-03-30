@@ -109,8 +109,9 @@ tcons :: TypeA -> String
 tcons t = case t of
     Id _     -> "id"
     TVar _   -> "var"
-    Arrow    -> "arr"
-    TApp (Info (TApp (Info Arrow _ _) _) _ _) _ -> "arr"
+    TOper _ _ _ -> "ope"
+    -- Arrow    -> "arr"
+    -- TApp (Info (TApp (Info Arrow _ _) _) _ _) _ -> "arr"
     TApp _ _ -> "app"
     Unknown  -> "unk"
 
