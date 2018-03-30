@@ -1,12 +1,12 @@
 module Block.Data where
 
 import Prelude
-import Data.Semigroup
-import Data.Eq
-import Data.Monoid
-import Data.Tuple
+import Data.Eq (class Eq1, eq1)
+import Data.Monoid (class Monoid, mempty)
+import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple)
 import Data.Array (foldl)
-import Data.Array.NonEmpty (NonEmptyArray, snoc, cons, toArray, head)
+import Data.Array.NonEmpty (NonEmptyArray, snoc, cons, cons', toArray, head)
 
 
 -- Info ------------------------------------------------------------------------
@@ -49,7 +49,7 @@ data ExprC e = Var String
              | App e e
              | Lambda (Array e) e
              | Num Int
-           -- | Oper Expr (Maybe Expr) (Maybe Expr)
+             | Oper e (Maybe e) (Maybe e)
              | If e e e
              | Case e (Array (Tuple e e))
            -- | Let (Array Bind) Expr
@@ -73,7 +73,10 @@ epure :: ExprA -> Expr
 epure = idefault sempty
 
 operToArray :: Expr -> NonEmptyArray Expr
-operToArray = appToArray
+operToArray x@(Info e t i) = case e of
+    Oper o (Just a) (Just b) -> epure (Oper o Nothing Nothing) `cons'` [a, b]
+    App a b -> appToArray a `snoc` b
+    _       -> pure x
 
 appToArray :: Expr -> NonEmptyArray Expr
 appToArray x@(Info e _ _) = case e of
@@ -87,7 +90,7 @@ toApp :: Expr -> Array Expr -> Expr
 toApp = foldl \a b -> Info (App a b) sempty mempty
 
 bindVar :: Bind -> Expr
-bindVar (Bind a _) = head $ appToArray a
+bindVar (Bind a _) = head $ operToArray a
 
 typeOf :: Expr -> Type
 typeOf (Info _ (Forall _ t) _) = t
@@ -152,6 +155,9 @@ arrowToArray x@(Info t _ _) = case t of
 
 arrowToArray_ :: Type -> Array Type
 arrowToArray_ = arrowToArray >>> toArray
+
+toTApp :: Array Type -> Type -> Type
+toTApp = flip $ foldl \a b -> idefault Base $ TApp a b
 
 -- Kind ------------------------------------------------------------------------
 

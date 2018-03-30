@@ -121,18 +121,22 @@ inferExpr t (Info e _ _) = case e of
                 {type: t', infos: i} <- unify t ts
                 pure $ Info e (spure t') i
             Nothing -> traceWith "error" s $ pure $ Info e (spure t) (Infos{ errors: [EOutOfScopeVar s] })
-    App a b -> do
-        ta <- traceId <$> newTVarT
-        tb <- newTVarT
-        -- {type: t', infos: i} <- unify ta $ arrow tb t
-        a' <- inferExpr (arrow tb t) a
-        b' <- inferExpr tb b
-        pure $ idefault (spure t) $ App a' b'
+    -- App a b -> do
+    --     ta <- newTVarT
+    --     tb <- newTVarT
+    --     a' <- inferExpr (arrow tb t) a
+    --     b' <- inferExpr tb b
+    --     pure $ idefault (spure t) $ App a' b'
+    App f a -> do
+        tp <- newTVarT
+        f' <- inferExpr (arrow tp t) f
+        a' <- inferExpr tp a
+        pure $ idefault (spure t) $ App f' a'
     Lambda as b -> do
         {args: as', expr: b', type: t', infos: i} <- inferLambda t as b
         pure $ Info (Lambda as' b') (spure t') i
     Num _ -> do
-        {type: t', infos: i} <- unify t (tpure $ Id "Int")
+        {type: t', infos: i} <- unify t $ tpure (Id "Int")
         pure $ Info e (spure t') i
     If c a b -> do
         c' <- inferExpr (tpure $ Id "Bool") c
@@ -147,6 +151,36 @@ inferExpr t (Info e _ _) = case e of
             b' <- localEnv (paramVars p') $ inferExpr t b
             pure $ Tuple p' b'
         pure $ idefault (spure t) $ Case a' as'
+    Oper o (Just a) (Just b) -> do
+        tp0 <- newTVarT
+        tp1 <- newTVarT
+        o'  <- inferExpr (arrow tp0 $ arrow tp1 t) o
+        a'  <- inferExpr tp0 a
+        b'  <- inferExpr tp1 b
+        pure $ idefault (spure t) $ Oper o' (Just a') (Just b')
+    Oper o (Just a) Nothing -> do
+        tp0 <- newTVarT
+        tp1 <- newTVarT
+        tr  <- newTVarT
+        {type: t', infos: i} <- unify t $ arrow tp1 tr
+        o'  <- inferExpr (arrow tp0 t') o
+        a'  <- inferExpr tp0 a
+        pure $ Info (Oper o' (Just a') Nothing) (spure t') i
+    Oper o Nothing (Just b) -> do
+        tp0 <- newTVarT
+        tp1 <- newTVarT
+        tr  <- newTVarT
+        {type: t', infos: i} <- unify t $ arrow tp0 tr
+        o'  <- inferExpr (arrow tp0 $ arrow tp1 tr) o
+        b'  <- inferExpr tp1 b
+        pure $ Info (Oper o' Nothing (Just b')) (spure t') i
+    Oper o Nothing Nothing -> do
+        tp0 <- newTVarT
+        tp1 <- newTVarT
+        tr  <- newTVarT
+        {type: t', infos: i} <- unify t $ arrow tp0 $ arrow tp1 tr
+        o' <- inferExpr t' o
+        pure $ idefault (spure t') $ Oper o' Nothing Nothing
     Empty -> pure $ idefault (spure t) e
 
 --------------------------------------------------------------------------------
@@ -159,6 +193,8 @@ binds :: Bind -> Envir
 binds b = let Info e sc _ = bindVar b
           in case e of
               Var s -> Map.singleton s $ generalizeAll sc
+              Oper (Info (Var s) _ _) _ _
+                    -> Map.singleton s $ generalizeAll sc
               _     -> Map.empty
 
 -- extend :: forall a. String -> Scheme -> Infer a -> Infer a
@@ -295,6 +331,7 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
         e' <- case e of
             App a b     -> App <$> goExpr a <*> goExpr b
             Lambda as b -> Lambda <$> mapM goExpr as <*> goExpr b
+            Oper o ma mb -> Oper <$> goExpr o <*> (sequence $ goExpr <$> ma) <*> (sequence $ goExpr <$> mb)
             If c a b    -> If <$> goExpr c <*> goExpr a <*> goExpr b
             Case a as   -> Case <$> goExpr a <*> forM as
                                \(Tuple p b) -> Tuple <$> goExpr p <*> goExpr b

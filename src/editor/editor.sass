@@ -11,6 +11,8 @@ $num-color:     $blue-0
 $num-border:    $blue-1
 $lambda-color:  $purple-0
 $lambda-border: $purple-1
+$oper-var-color:  $teal-0
+$oper-var-border: $teal-1
 $if-color:      $pink-0
 $if-border:     $pink-1
 $type-color:    $light-green-0
@@ -219,12 +221,14 @@ bind-var
   >.slot>.sample
     @include flex-expr
     border-radius: $expr-border-radius
-  >.slot>.sample>.term
-    border: $expr-border
-    border-radius: $expr-border-radius
-    &.var
-      background:   $var-color
-      border-color: $var-border
+    >.term
+      border: $expr-border
+      &.var
+        border-radius: $expr-border-radius
+        background:   $var-color
+        border-color: $var-border
+      &.opv
+        border-color: $oper-var-border
   &.func>.slot>.sample>.term
     @include right-border-radius(0)
   >highlight
@@ -344,6 +348,12 @@ hole
   pointer-events: auto
   border-right: $expr-border
   box-shadow: $hole-shadow
+  &.left
+    @include left-border-radius($expr-border-radius)
+    border-left: $expr-border
+    border-right: none
+    >highlight
+      @include left-border-radius($expr-border-radius)
   &.right
     @include right-border-radius($expr-border-radius)
     >highlight
@@ -404,6 +414,37 @@ expr-lambda.term
   &:hover add-area
     opacity: 1
 
+expr-oper.term
+  // >.var
+  //   @include flex-expr
+  //   >expr
+  //     border-right: $expr-border
+  //     border-left: $expr-border
+  //     border-color: $oper-var-border
+  //     >.slot>.term
+  //       background: $oper-var-color
+  >.left, >.right
+    @include flex-expr
+    >hole
+      margin: -2px
+  >.left
+    >expr
+      >.slot>.term
+        border-right: none
+      >highlight
+        margin-right: -2px
+    >hole
+      margin-right: 0
+  >.right
+    >hole
+      margin-left: 0
+oper-var.term
+  @include flex-expr
+  border-right: $expr-border
+  border-left: $expr-border
+  >highlight
+    margin: -2px
+
 expr-if.term
   >expr
     border-left:  $expr-border
@@ -435,7 +476,6 @@ expr-case.term
     opacity: 0
   &:hover>button
     opacity: .5
-
 
 case-alter
   @include flex-expr
@@ -516,6 +556,7 @@ highlight
     box-shadow: $light-1
     border-color: $hover-color
     background-color: rgba(255,255,255,0.2)
+    z-index: 2
     // opacity: 1
 
 sample
@@ -587,6 +628,9 @@ editor
   .lam, .term.lam, .slot>.term.lam
     background:   $lambda-color
     border-color: $lambda-border
+  .opv, .term.opv, .slot>.term.opv
+    background:   $oper-var-color
+    border-color: $oper-var-border
   .ift, .term.ift, .slot>.term.ift, .cas, .term.cas, .slot>.term.cas
     background:   $if-color
     border-color: $if-border

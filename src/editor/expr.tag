@@ -55,13 +55,20 @@ import I from 'Block.Bridge'
 
 <bind-var class={func: func}>
   <div ref='slot' class='slot'>
-    <div class='sample'>
+    <div class='sample' if={cons == 'var'}>
       <div class='term var'>
         <handle/>
         <input-field data={expr.value0}/>
         <!--<span class='token'>{expr.value0}</span>-->
       </div>
       <hole each={t, i in holes} data={t} right={i == holes.length - 1} spine='var' conpact={false}/>
+    </div>
+    <div class='sample' if={cons == 'ope'}>
+      <hole data={holes[0]} spine='opv' left={true} conpact={false}/>
+      <div class='term opv'>
+        <input-field data={expr.value0}/>
+      </div>
+      <hole data={holes[1]} spine='opv' right={true} conpact={false}/>
     </div>
   </div>
 
@@ -74,7 +81,8 @@ import I from 'Block.Bridge'
     this.mixin(Mixin.Clonable)
 
     this.name   = 'expr'
-    this.expr   = this.data.value0
+    this.cons   = I.econs(this.data.value0)
+    this.expr   = this.cons == 'ope' ? this.data.value0.value0.value0 : this.data.value0
     this.scheme = this.data.value1
     this.holes  = I.arrowToArray(this.scheme.value1)
     this.holes.pop()
@@ -93,12 +101,13 @@ import I from 'Block.Bridge'
     <var-expr    if={cons == 'var'} data={expr}/>
     <app-expr    if={cons == 'app'} data={expr} spine={spine} outer={outer && !func}/>
     <expr-lambda if={cons == 'lam'} data={expr} renew={renewE}/>
+    <expr-oper   if={cons == 'ope'} data={expr}/>
     <num-expr    if={cons == 'num'} data={expr}/>
     <expr-if     if={cons == 'ift'} data={expr}/>
     <expr-case   if={cons == 'cas'} data={expr}/>
   </div>
-  <hole if={outer && func && !(factor && opts.left)} spine={spine} each={t, i in holes}
-        data={t} right={i == holes.length - 1} renew={apply(i)}/>
+  <hole if={outer && func && !(factor && opts.left)} spine={spine}
+        each={t, i in holes} data={t} right={i == holes.length - 1} renew={apply(i)}/>
 
   <infos show={hover} data={infos}/>
   <type-info show={hover} data={scheme}/>
@@ -114,10 +123,12 @@ import I from 'Block.Bridge'
     this.scheme  = this.data.value1
     this.infos   = this.data.value2
     this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
-    this.func    = this.holes.length > 0
+    this.oper    = this.cons == 'ope'
+    this.func    = this.holes.length > 0 && !(this.oper && this.holes.length <= 2)
     this.app     = this.cons == 'app' && !opts.spine
     this.factor  = this.cons == 'lam' || this.cons == 'ift'
-    this.bracket = (opts.bracket || opts.hole) && (this.func || this.app)
+    // this.oper    = this.cons == 'ope'
+    this.bracket = (opts.bracket || opts.hole) && (this.func || this.app || this.oper)
                 || this.factor && (opts.left)
     this.outer   = opts.outer || this.bracket || this.app
     const spineC = I.econs(I.appToArray(this.data)[0].value0)
@@ -141,7 +152,7 @@ import I from 'Block.Bridge'
   </script>
 </expr>
 
-<hole class='{opts.spine} {opts.right?"right":""} {conpact?"conpact":""}'>
+<hole class='{opts.spine} {opts.left?"left":""} {opts.right?"right":""} {conpact?"conpact":""}'>
   <div ref='slot' class='slot'>
     <type data={opts.data}/>
   </div>
@@ -151,7 +162,7 @@ import I from 'Block.Bridge'
   <script>
     this.mixin(Mixin.Data)
     this.mixin(Mixin.Selectable)
-    this.mixin(Mixin.Droppable)
+    if (opts.renew) this.mixin(Mixin.Droppable)
 
     this.name = 'expr'
     this.scheme  = I.spure(this.data)
@@ -211,6 +222,47 @@ import I from 'Block.Bridge'
     this.renewR = d => this.renew(I.appC(this.data.value0)(d))
   </script>
 </app-expr>
+
+<expr-oper class='term opv'>
+  <div class='left'>
+    <expr if={a} data={a} hole={true} left={true} renew={renewA}/>
+    <hole if={!a} data={holes[0]} spine='opv' left={true} renew={renewA}/>
+  </div>
+  <oper-var data={o}/>
+  <div class='right'>
+    <expr if={b} data={b} hole={true} right={true} renew={renewB}/>
+    <hole if={!b} data={holes[1]} spine='opv' right={true} renew={renewB}/>
+  </div>
+
+  <script>
+    this.mixin(Mixin.Data)
+    this.o = this.data.value0
+    this.a = this.data.value1.value0
+    this.b = this.data.value2.value0
+    this.holes = I.arrowToArray(this.o.value1.value1); this.holes.pop()
+    this.renewA  = a => this.renew(this.cons(this.o, a, this.b))
+    this.renewB  = b => this.renew(this.cons(this.o, this.a, b))
+    this.onrenew = o => this.renew(this.cons(o, this.a, this.b))
+    this.cons = (o, a, b) => a ? b ? I.operC(o)(a)(b) : I.operCA(o)(a)
+                               : b ? I.operCB(o)(b)   : I.operC0(o)
+  </script>
+</expr-oper>
+
+<oper-var class='term opv'>
+  <span class='token'>{expr.value0}</span>
+
+  <infos show={hover} data={infos}/>
+  <type-info show={hover} data={scheme}/>
+  <highlight hover={hover} infos={infos}/>
+
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Selectable)
+    this.expr   = this.data.value0
+    this.scheme = this.data.value1
+    this.infos  = this.data.value2
+  </script>
+</oper-var>
 
 <num-expr class='term num'>
   <span class='token'>{opts.data.value0}</span>

@@ -4,7 +4,7 @@ import Prelude
 import Data.Monoid
 import Data.Array (updateAt, deleteAt, modifyAt, head, length)
 import Data.Tuple
-import Data.Maybe (fromMaybe, maybe)
+import Data.Maybe (fromMaybe, maybe, Maybe(..))
 
 import Block.Data
 import Block.Data as D
@@ -16,17 +16,20 @@ import Block.TypeChecker as TC
 -- default = [BindStmt [Bind ()]]
 
 main_module :: Statements
-main_module = typeChecks prelude [BindStmt [Bind bar (epure $ Num 2)],
+main_module = typeChecks prelude [BindStmt [Bind bar operA],
                                   BindStmt [Bind foo $ app (epure $ Var "negate") one]]
 
 prelude :: Statements
 prelude = typeChecks []
     [BindStmt [Bind (epure $ Var "one") (epure $ Num 0)]] <>
     [BindStmt [Bind (idefault (spure $ arrow (tpure $ Id "Int") (tpure $ Id "Int")) (Var "negate")) eempty],
-     BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty]]
+     BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty],
+     BindStmt [Bind (idefault int2 (Oper (idefault int2 $ Var "+") Nothing Nothing)) eempty],
+     BindStmt [Bind (idefault int2 (Oper (idefault int2 $ Var "-") Nothing Nothing)) eempty],
+     BindStmt [Bind (idefault int2bool (Oper (idefault int2bool $ Var "<") Nothing Nothing)) eempty]]
 
 sampleExprs :: Array Expr
-sampleExprs = [idefault (spure' $ Id "Int") (Num 0),
+sampleExprs = [idefault intS (Num 0),
                idefault (spure $ arrow ta tb) (Lambda [ea] ebe),
                idefault ta' $ If (idefault (spure' $ Id "Bool") Empty) eae eae,
                idefault tb' $ Case eae [Tuple ea ebe]]
@@ -45,6 +48,12 @@ exprA = epure $ App (epure $ Var "hoge") (epure $ Num 0)
 bar = epure $ App (epure $ Var "bar") (epure $ Var "x")
 foo = epure $ App (epure $ Var "foo") (epure $ Var "y")
 one = epure $ Num 1
+operA = epure $ Oper (epure $ Var "+") Nothing Nothing
+int2 = spure $ arrow intT $ arrow intT intT
+int2bool = spure $ arrow intT $ arrow intT boolT
+intT = tpure $ Id "Int"
+boolT = tpure $ Id "Bool"
+intS = spure intT
 
 app a b = epure $ App a b
 spure' = spure <<< tpure
@@ -93,6 +102,7 @@ econs e = case e of
     Lambda _ _ -> "lam"
     If _ _ _   -> "ift"
     Case _ _   -> "cas"
+    Oper _ _ _ -> "ope"
     Empty      -> "emp"
 
 tcons :: TypeA -> String
@@ -149,5 +159,9 @@ appC    = App
 varC    = Var
 ifC     = If
 caseC   = Case
+operC o a b = Oper o (Just a) (Just b)
+operC0 o   = Oper o Nothing Nothing
+operCA o a = Oper o (Just a) Nothing
+operCB o b = Oper o Nothing (Just b)
 lambdaC [] b = b
 lambdaC as b = epure $ Lambda as b
