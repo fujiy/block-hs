@@ -6,6 +6,7 @@ import Control.Monad.Eff.Console
 
 foreign import console_log :: forall a. a -> Unit
 foreign import console_log_with :: forall a. String -> a -> Unit
+foreign import console_error :: forall a. a -> Unit
 
 trace :: forall a b. b -> a -> a
 trace b a = const a (console_log b)
@@ -24,3 +25,6 @@ traceShow b a = trace (show b) a
 
 traceShowId :: forall a. Show a => a -> a
 traceShowId a = traceShow a a
+
+throw :: forall a b. b -> a -> a
+throw e a = const a (console_error e)

@@ -92,6 +92,13 @@ toApp = foldl \a b -> Info (App a b) sempty mempty
 bindVar :: Bind -> Expr
 bindVar (Bind a _) = head $ operToArray a
 
+bindVarS :: Bind -> String
+bindVarS b = let Info e sc _ = bindVar b
+             in case e of
+                 Var s                       -> s
+                 Oper (Info (Var s) _ _) _ _ -> s
+                 _                           -> ""
+
 typeOf :: Expr -> Type
 typeOf (Info _ (Forall _ t) _) = t
 

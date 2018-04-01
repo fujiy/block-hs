@@ -23,15 +23,15 @@ import I from 'Block.Bridge'
   </div>
   <div if={cons == 'match'}>
     <span class='token'>Couldn't match expected type</span>
-    <type data={data.value0}/>
+    <type data={data.value0} outer={true}/>
     <span class='token'>with</span>
-    <type data={data.value1}/>
+    <type data={data.value1} outer={true}/>
   </div>
   <div if={cons == 'occurs'}>
     <span class='token'>Occurs check: cannot construct the infinite type:</span>
-    <type data={data.value0}/>
+    <type data={data.value0} outer={true}/>
     <span class='token'>~</span>
-    <type data={data.value1}/>
+    <type data={data.value1} outer={true}/>
   </div>
   <script>
     this.mixin(Mixin.Data)

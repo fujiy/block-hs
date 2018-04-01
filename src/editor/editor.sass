@@ -600,6 +600,8 @@ infos
   z-index: 100
   &, *
     pointer-events: none
+  .token
+    color: $text-light
 
 error
   display: flex
@@ -612,10 +614,11 @@ error
   background: $error-color
   border-color: $error-border
 
+  padding: 1px
   .term
-    border: $expr-border
-    border-radius: $expr-border-radius
-    margin: 1px
+    // border: $expr-border
+    // border-radius: $expr-border-radius
+    // margin: 1px
 
 highlight
   display: inline-block
