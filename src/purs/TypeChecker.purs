@@ -6,7 +6,7 @@ import Control.Monad.Reader.Class (ask, local)
 import Control.Monad.Reader (Reader, ReaderT, runReader, runReaderT)
 import Control.Monad.State (StateT, evalStateT, runStateT, get, put, modify)
 import Data.Foldable (or)
-import Data.Traversable (sequence)
+import Data.Traversable (class Traversable, sequence)
 import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
 import Data.Array ((:), (\\), unzip, uncons, foldr, head, toUnfoldable, elem)
@@ -54,6 +54,16 @@ infer m = do
 localEnv :: forall a. Envir -> Infer a -> Infer a
 localEnv env = local ((<>) env)
 
+backtrackUntil :: forall a. (a -> a -> Boolean) -> (a -> Infer a) -> a -> Infer a
+backtrackUntil p f a = do
+    tenv <- get
+    a' <- f a
+    if p a a'
+        then pure a'
+        else do
+            put tenv
+            backtrackUntil p f a'
+
 getBind :: String -> Infer (Maybe Scheme)
 getBind s = Map.lookup s <$> ask
 
@@ -91,6 +101,15 @@ inferBind (Bind a b) = do
   where
     appBindVar :: Expr -> Array Expr -> Expr
     appBindVar = toApp
+
+inferBinds :: Array Bind -> Infer (Array Bind)
+inferBinds xs = backtrackUntil
+    (\bs bs' -> map binds bs == map binds bs')
+    (\bs -> do
+        env <- mapM generalize $ mconcat $ map binds bs
+        localEnv env $ mapM (inferBind >=> showTypes) xs)
+    []
+    -- if map binds bs == map binds bs' then pure bs' else inferBinds bs'
 
 inferLambda :: Type -> Array Expr -> Expr -> Infer {args :: Array Expr, expr :: Expr, type :: Type, infos :: Infos}
 inferLambda t as b = case uncons as of
@@ -151,6 +170,11 @@ inferExpr t (Info e _ _) = case e of
             b' <- localEnv (paramVars p') $ inferExpr t b
             pure $ Tuple p' b'
         pure $ idefault (spure t) $ Case a' as'
+    Let bs a -> do
+        bs' <- inferBinds bs
+        env <- mapM generalize $ mconcat $ map binds bs'
+        a' <- localEnv env $ inferExpr t a
+        pure $ idefault (spure t) $ Let bs' a'
     Oper o (Just a) (Just b) -> do
         tp0 <- newTVarT
         tp1 <- newTVarT
@@ -187,15 +211,17 @@ inferExpr t (Info e _ _) = case e of
 
 envirs :: Statement -> Envir
 envirs s = case s of
-    BindStmt bs -> maybe mempty binds $ head bs
+    BindStmt bs -> maybe mempty (binds >>> map generalize') $ head bs
 
 binds :: Bind -> Envir
 binds b = let Info e sc _ = bindVar b
           in case e of
-              Var s -> Map.singleton s $ generalizeAll sc
+              Var s -> Map.singleton s sc
               Oper (Info (Var s) _ _) _ _
-                    -> Map.singleton s $ generalizeAll sc
+                    -> Map.singleton s sc
               _     -> Map.empty
+
+
 
 -- extend :: forall a. String -> Scheme -> Infer a -> Infer a
 -- extend s sc m = local (Map.insert s sc) m
@@ -268,11 +294,12 @@ instantiate (Forall ts t) = do
 
 generalize :: Scheme -> Infer Scheme
 generalize (Forall _ t) = do
-    tvs <- (\\) (tvarsOf t) <$> tvars
-    pure $ Forall tvs t
+    t' <- evalType t
+    tvs <- (\\) (tvarsOf t') <$> tvars
+    pure $ Forall tvs t'
 
-generalizeAll :: Scheme -> Scheme
-generalizeAll (Forall _ t) = Forall (tvarsOf t) t
+generalize' :: Scheme -> Scheme
+generalize' (Forall _ t) = Forall (tvarsOf t) t
 
 unify :: Type -> Type -> Infer {type :: Type, infos :: Infos}
 unify a b = do
@@ -344,12 +371,13 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
     goExpr :: Expr -> Infer Expr
     goExpr (Info e sc i) = do
         e' <- case e of
-            App a b     -> App <$> goExpr a <*> goExpr b
-            Lambda as b -> Lambda <$> mapM goExpr as <*> goExpr b
+            App a b      -> App <$> goExpr a <*> goExpr b
+            Lambda as b  -> Lambda <$> mapM goExpr as <*> goExpr b
             Oper o ma mb -> Oper <$> goExpr o <*> (sequence $ goExpr <$> ma) <*> (sequence $ goExpr <$> mb)
-            If c a b    -> If <$> goExpr c <*> goExpr a <*> goExpr b
-            Case a as   -> Case <$> goExpr a <*> forM as
+            If c a b     -> If <$> goExpr c <*> goExpr a <*> goExpr b
+            Case a as    -> Case <$> goExpr a <*> forM as
                                \(Tuple p b) -> Tuple <$> goExpr p <*> goExpr b
+            Let bs a     -> Let <$> mapM showTypes bs <*> goExpr a
             _ -> pure e
         sc' <- goScheme sc
         pure $ Info e' sc' i
@@ -360,10 +388,10 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
 
 --------------------------------------------------------------------------------
 
-mapM :: forall m a b. Monad m => (a -> m b) -> Array a -> m (Array b)
+mapM :: forall m t a b. Monad m => Traversable t => (a -> m b) -> t a -> m (t b)
 mapM f = map f >>> sequence
 
-forM :: forall m a b. Monad m => Array a -> (a -> m b) -> m (Array b)
+forM :: forall m t a b. Monad m => Traversable t => t a -> (a -> m b) -> m (t b)
 forM = flip mapM
 
 mconcat :: forall m. Monoid m => Array m -> m

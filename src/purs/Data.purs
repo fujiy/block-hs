@@ -52,7 +52,7 @@ data ExprC e = Var String
              | Oper e (Maybe e) (Maybe e)
              | If e e e
              | Case e (Array (Tuple e e))
-           -- | Let (Array Bind) Expr
+             | Let (Array Bind) Expr
            -- | TypeAnnot Expr Scheme
              | Empty
              -- | Arg

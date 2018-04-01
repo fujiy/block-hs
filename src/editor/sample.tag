@@ -20,11 +20,12 @@ import I from 'Block.Bridge'
 // Expr sample -----------------------------------------------------------------
 
 <expr-sample>
-  <div class='slot' ref='slot'>
+  <div class='slot clonable' ref='slot'>
     <num-expr    if={cons == 'num'} data={expr}/>
     <expr-lambda if={cons == 'lam'} data={expr}/>
     <expr-if     if={cons == 'ift'} data={expr}/>
     <expr-case   if={cons == 'cas'} data={expr}/>
+    <expr-let    if={cons == 'let'} data={expr}/>
   </div>
 
   <type-info show={hover} data={scheme}/>

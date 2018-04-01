@@ -41,7 +41,7 @@ $term-shadow-hover: $shadow-2
 $hole-shadow:       $shadow-1-inset
 $term-transition:   0.2s
 
-$indent: 30px
+$indent: 40px
 
 
 @function stud-right($c)
@@ -87,15 +87,6 @@ editor
     &.main
       grid-column: 2/3
 
-  .trash
-    height: 100px
-    width: 100px
-    background: $gray-1
-
-    .ghost
-      // opacity: 0
-      // display: none
-
   .slot
     display: inline-flex
     align-items: center
@@ -119,14 +110,17 @@ editor
     pointer-events: auto
     white-space: nowrap
 
-  .ghost
-    // opacity: 0
-    display: none
-
   .drag
     // pointer-events: none
     // background: red
     // opacity: 0.4
+
+  .clonable, .sortable
+    .ghost
+      display: inline-flex
+  .draggable, .droppable, .trash
+    .ghost
+      display: none
 
 button.remove, button.add
   border: none
@@ -154,7 +148,6 @@ statement
 
   &.ghost
     opacity: 0
-    display: block
 
 bind
   @include flex-expr
@@ -179,13 +172,17 @@ bind-left
 
   >bind-var
     margin: -2px
-    margin-right: 0
     >.slot>.sample:not(.drag)>hole
       display: none
-    &.func>highlight
-      @include right-border-radius(0)
+    &:not(.outer)
+      margin-right: 0
+      >highlight
+        @include right-border-radius(0)
   >pattern
     pointer-events: auto
+    &:not(.right)
+      border-right: $expr-border
+      border-color: $var-border
 
   add-area
     position: absolute
@@ -231,13 +228,13 @@ bind-var
         border-color: $var-border
       &.opv
         border-color: $oper-var-border
-  &.func>.slot>.sample>.term
-    @include right-border-radius(0)
+  &.func:not(.outer)
+    >.slot>.sample>.term
+      @include right-border-radius(0)
   >highlight
     border-radius: $expr-border-radius
-
-  .ghost
-    display: inline-flex
+  &:hover handle button
+    opacity: .5
 
 expr, pattern
   @include flex-expr
@@ -313,11 +310,6 @@ expr, pattern
 
 pattern
   pointer-events: auto
-  &:not(.right):not(.outer)
-    border-right: $expr-border
-    border-color: $var-border
-  .ghost
-    display: inline-flex
   &:hover handle button
     opacity: .5
 
@@ -409,6 +401,8 @@ expr-lambda.term
     @include flex-expr
     position: relative
     pattern
+      &:not(.right)
+        border-right: $expr-border
       border-color: $lambda-border
       &:nth-child(2)
         border-left: $expr-border
@@ -450,6 +444,7 @@ expr-oper.term
   >.right
     >hole
       margin-left: 0
+
 oper-var.term
   @include flex-expr
   border-right: $expr-border
@@ -481,7 +476,6 @@ expr-case.term
     @include flex-expr
     flex-direction: column
     .ghost
-      display: inline-flex
       opacity: 0
   >button.add
     position: absolute
@@ -511,6 +505,58 @@ case-alter
     bottom: 4px
     margin: auto 0
     opacity: 0
+
+expr-let.term
+  flex-direction: column
+  position: relative
+  // justify-content: flex-start
+  align-items: flex-start
+  // overflow: hidden
+  >.token
+    position: absolute
+    left: 0
+    top: 0
+    padding: 2px 0
+  >.list
+    @include flex-expr
+    flex-direction: column
+    >bind
+      padding: 1px
+      // padding-left: $indent
+      margin-left: $indent
+      border-radius: $term-border-radius
+      transition: $term-transition box-shadow
+      &.hover, &:hover
+        box-shadow: $term-shadow-hover
+        >button
+          opacity: .5
+  >.expr
+    @include flex-expr
+    position: relative
+    margin-right: -2px
+    >button.add
+      position: absolute
+      width: $indent
+      // text-align: center
+      bottom: calc(100% - 4px)
+      opacity: 0
+      &:hover
+        opacity: 1
+    >.token
+      @include flex-expr
+      width: $indent - 10px
+    >expr
+      margin-bottom: -2px
+      border: $expr-border
+      border-color: $if-border
+      border-bottom-right-radius: $expr-border-radius
+      >.slot>.term
+        border-bottom-right-radius: $term-border-radius
+      >highlight
+        border-bottom-right-radius: $expr-border-radius
+  &:hover>.expr button
+    opacity: .5
+
 
 type
   display: inline-flex
@@ -616,8 +662,6 @@ expr-sample
     box-shadow: $term-shadow
   >highlight
     border-radius: $expr-border-radius
-  .ghost
-    display: inline-flex
   handle
     display: none
   add-area
@@ -626,6 +670,8 @@ expr-sample
     pointer-events:  none
     input
       text-decoration: none
+  button
+    // display: none
   expr-lambda
     >expr>.slot>.term
       @include right-border-radius($term-border-radius)
@@ -669,7 +715,7 @@ editor
   .opv, .term.opv, .slot>.term.opv
     background:   $oper-var-color
     border-color: $oper-var-border
-  .ift, .term.ift, .slot>.term.ift, .cas, .term.cas, .slot>.term.cas
+  .ift, .term.ift, .slot>.term.ift, .cas, .term.cas, .slot>.term.cas, .let, .term.let, .slot>.term.let
     background:   $if-color
     border-color: $if-border
   .type, .term.type, .slot>.term.type
@@ -678,10 +724,3 @@ editor
   .opt, .term.opt, .slot>.term.opt
     background:   $type-oper-color
     border-color: $type-oper-border
-
-.fa-grip:before
-  // content: "\f142 \202F \f142 \202F \f142"
-  content: "\f142 \f142"
-  letter-spacing: 0.1em
-.fa.fa-grip-large:before
-  content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142"

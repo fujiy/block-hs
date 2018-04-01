@@ -32,7 +32,8 @@ sampleExprs :: Array Expr
 sampleExprs = [idefault intS (Num 0),
                idefault (spure $ arrow ta tb) (Lambda [ea] ebe),
                idefault ta' $ If (idefault (spure' $ Id "Bool") Empty) eae eae,
-               idefault tb' $ Case eae [Tuple ea ebe]]
+               idefault tb' $ Case eae [Tuple ea ebe],
+               idefault tb' $ Let [Bind ea eae] ebe]
 
 ta = tpure $ TVar $ Named "a"
 tb = tpure $ TVar $ Named "b"
@@ -80,6 +81,8 @@ pempty :: Expr
 pempty = epure $ Var "_"
 aempty :: Tuple Expr Expr
 aempty = Tuple pempty D.eempty
+bempty :: Bind
+bempty = Bind (epure $ Var "a") D.eempty
 
 bindStmtVar :: Statement -> Expr
 bindStmtVar s = case s of
@@ -100,9 +103,10 @@ econs e = case e of
     App _ _    -> "app"
     Num _      -> "num"
     Lambda _ _ -> "lam"
+    Oper _ _ _ -> "ope"
     If _ _ _   -> "ift"
     Case _ _   -> "cas"
-    Oper _ _ _ -> "ope"
+    Let _ _    -> "let"
     Empty      -> "emp"
 
 tcons :: TypeA -> String
@@ -161,6 +165,8 @@ varC    = Var
 numC    = Num
 ifC     = If
 caseC   = Case
+caseAltC = Tuple
+letC    = Let
 operC o a b = Oper o (Just a) (Just b)
 operC0 o   = Oper o Nothing Nothing
 operCA o a = Oper o (Just a) Nothing

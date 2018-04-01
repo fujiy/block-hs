@@ -21,7 +21,7 @@ import I from 'Block.Bridge'
     Function:
     <p each={d in prelude}><sample data={d}/></p>
   </div>
-  <div class='tab main bg-light' ref='area'>
+  <div class='tab main bg-light trash' ref='area'>
     <main-module data={main_module} lib={prelude}/>
   </div>
 
@@ -43,7 +43,7 @@ import I from 'Block.Bridge'
   </script>
 </editor>
 
-<main-module>
+<main-module class='sortable'>
   <div ref="list">
     <statement each={stmt, i in data} data={stmt} index={i} renew={renewS(i)}/>
   </div>
