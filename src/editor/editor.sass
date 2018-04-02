@@ -257,16 +257,6 @@ expr, pattern
   &.hole
     pointer-events: auto
 
-  &.bracket
-    background: $bracket-color
-    padding: 1px
-    pointer-events: none
-    box-shadow: $hole-shadow
-    >.slot>.term
-      box-shadow: $term-shadow
-      pointer-events: auto
-    >highlight
-      margin: 1px
   &.left
     &.bracket
       @include left-border-radius($term-border-radius)
@@ -285,6 +275,16 @@ expr, pattern
       @include right-border-radius($term-border-radius)
       >.slot>.term
         @include right-border-radius($expr-border-radius)
+  &.bracket
+    background: $bracket-color
+    padding: 1px
+    pointer-events: none
+    box-shadow: $hole-shadow
+    >.slot>.term
+      box-shadow: $term-shadow
+      pointer-events: auto
+    >highlight
+      margin: 1px
   &.outer>.slot>.term, >.slot>.term.drag
     border: $expr-border
     border-radius: $expr-border-radius
@@ -293,9 +293,8 @@ expr, pattern
       @include right-border-radius(0)
       pointer-events: auto
     &.factor:not(.left)
-      .right
-        >.slot>.term, >highlight
-          @include right-border-radius(0)
+      expr.right
+        @include right-border-radius(0)
   &.factor.left
     >.slot>.term
       @include right-border-radius($expr-border-radius)
@@ -307,6 +306,7 @@ expr, pattern
 
   >highlight
     margin: -2px
+    // display: none
 
 pattern
   pointer-events: auto
@@ -403,7 +403,7 @@ expr-lambda.term
     pattern
       &:not(.right)
         border-right: $expr-border
-      border-color: $lambda-border
+        border-color: $lambda-border
       &:nth-child(2)
         border-left: $expr-border
         border-color: $lambda-border
@@ -429,12 +429,15 @@ expr-oper.term
   //     border-color: $oper-var-border
   //     >.slot>.term
   //       background: $oper-var-color
+  &.just
+    >oper-var *
+      pointer-events: none
   >.left, >.right
     @include flex-expr
     >hole
       margin: -2px
   >.left
-    >expr
+    >expr:not(.bracket)
       >.slot>.term
         border-right: none
       >highlight
@@ -449,6 +452,7 @@ oper-var.term
   @include flex-expr
   border-right: $expr-border
   border-left: $expr-border
+  pointer-events: none
   >highlight
     margin: -2px
   type-info
@@ -559,7 +563,7 @@ expr-let.term
 
 
 type
-  display: inline-flex
+  @include flex-expr
   position: relative
 
   &.outer
@@ -570,20 +574,27 @@ type
     background: $bracket-color
     padding: 1px
   &.left
+    &.bracket
+      @include left-border-radius($term-border-radius)
     >.term
       @include left-border-radius($term-border-radius)
   &.right
     >.term
       @include right-border-radius($term-border-radius)
+  >.term
+    @include flex-expr
 
   &:not(.outer)>type-oper>.left>.term
     @include left-border-radius(0)
 
 type-oper.term
-  >.opt
-    @include flex-expr
+  >.term
+    // @include flex-expr
     border-right: $expr-border
     border-left: $expr-border
+
+scheme
+  @include flex-expr
 
 type-info
   position: absolute

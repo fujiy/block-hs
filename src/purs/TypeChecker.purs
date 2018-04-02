@@ -14,7 +14,8 @@ import Data.Array.NonEmpty as NE
 import Data.List as L
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map as Map
-import Data.String (charAt)
+import Data.String (charAt, singleton, charCodeAt)
+import Data.Char (fromCharCode)
 
 
 import Block.Data
@@ -262,6 +263,11 @@ newTVar = do
              temp = r.temp + 1}
     pure s
 
+newTVarOf :: TVar -> Infer Unit
+newTVarOf v = do
+    r <- get
+    put $ r {tvars = Map.insert v tempty r.tvars}
+
 getTVar :: TVar -> Infer Type
 getTVar v = do
     r <- get
@@ -400,7 +406,34 @@ showTypes (Bind x y) = Bind <$> goExpr x <*> goExpr y
         pure $ Info e' sc' i
 
     goScheme :: Scheme -> Infer Scheme
-    goScheme (Forall ts t)= Forall ts <$> evalType t
+    goScheme (Forall ts t) = Forall <$> mapM nameTVar ts <*> (evalType >=> nameType) t
+
+nameType :: Type -> Infer Type
+nameType x = do
+    Info t k i <- evalType x
+    t' <- case t of
+        TVar v      -> TVar <$> nameTVar v
+        TApp a b    -> TApp <$> nameType a <*> nameType b
+        TOper s a b -> TOper s <$> sequence (map nameType a) <*> sequence (map nameType b)
+        _           -> pure t
+    pure $ Info t' k i
+
+nameTVar :: TVar -> Infer TVar
+nameTVar v@(Named _) = pure v
+nameTVar v@(Temp _) = do {tvars: m} <- get
+                         let v' = newNamed m "a"
+                         newTVarOf v'
+                         assignTVar v $ tpure $ TVar v'
+                         pure v'
+    where
+        newNamed :: Map.Map TVar Type -> String -> TVar
+        newNamed m s = if Map.member (Named s) m
+                       then newNamed m $ succ s
+                       else Named s
+
+        succ :: String -> String
+        succ s = maybe s (\n -> singleton $ fromCharCode $ n + 1)
+                         (charCodeAt 0 s)
 
 
 --------------------------------------------------------------------------------

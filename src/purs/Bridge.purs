@@ -16,7 +16,7 @@ import Block.TypeChecker as TC
 -- default = [BindStmt [Bind ()]]
 
 main_module :: Statements
-main_module = typeChecks prelude [BindStmt [Bind bar operA],
+main_module = typeChecks prelude [BindStmt [Bind baz hoge],
                                   BindStmt [Bind foo $ app (epure $ Var "negate") one]]
 
 prelude :: Statements
@@ -48,6 +48,8 @@ exprB = epure $ App exprA (epure $ Var "fuga")
 exprA = epure $ App (epure $ Var "hoge") (epure $ Num 0)
 bar = epure $ App (epure $ Var "bar") (epure $ Var "x")
 foo = epure $ App (epure $ Var "foo") (epure $ Var "y")
+baz = toApp (epure $ Var "baz") [epure $ Var "f", epure $ Var "x"]
+hoge = epure $ App (epure $ Var "f") (epure $ Var "x")
 one = epure $ Num 1
 operA = epure $ Oper (epure $ Var "+") Nothing Nothing
 int2 = spure $ arrow intT $ arrow intT intT

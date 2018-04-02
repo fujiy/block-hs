@@ -129,7 +129,7 @@ import I from 'Block.Bridge'
     this.factor  = this.cons == 'lam' || this.cons == 'ift' || this.cons == 'cas' || this.cons == 'let'
     // this.oper    = this.cons == 'ope'
     this.bracket = (opts.bracket || opts.hole) && (this.func || this.app || this.oper)
-                || this.factor && (opts.left)
+                || this.factor && (opts.left || opts.bracket || opts.hole)
     this.outer   = opts.outer || this.bracket || this.app
     const spineC = I.econs(I.appToArray(this.data)[0].value0)
     this.spine   = opts.spine || (spineC == 'lam' || spineC == 'ift' ? 'bra' : spineC)
@@ -223,7 +223,7 @@ import I from 'Block.Bridge'
   </script>
 </app-expr>
 
-<expr-oper class='term opv'>
+<expr-oper class='term opv {a||b?"":"just"}'>
   <div class='left'>
     <expr if={a} data={a} hole={true} left={true} renew={renewA}/>
     <hole if={!a} data={holes[0]} spine='opv' left={true} renew={renewA}/>

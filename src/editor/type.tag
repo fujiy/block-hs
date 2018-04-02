@@ -15,7 +15,7 @@ import I from 'Block.Bridge'
 
 // Type
 
-<type class={outer: outer, left: opts.left, right: opts.right, hole: opts.hole}>
+<type class={outer: outer, left: opts.left, right: opts.right, bracket: bracket}>
   <type-id      if={cons == 'id'}  data={type}/>
   <type-var     if={cons == 'var'} data={type}/>
   <type-oper    if={cons == 'ope'} data={type}/>
@@ -26,8 +26,8 @@ import I from 'Block.Bridge'
     this.type = this.data.value0
     this.cons = I.tcons(this.type)
     this.oper    = this.cons == 'ope'
-    // this.app     = this.cons == 'app' && !opts.spine
-    // this.bracket = (opts.bracket || opts.hole) && this.oper
+    this.app     = this.cons == 'app'
+    this.bracket = (opts.bracket || opts.hole) && (this.func || this.app || (this.oper && opts.left))
     this.outer   = opts.outer || this.bracket
   </script>
 </type>
