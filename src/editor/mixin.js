@@ -9,9 +9,11 @@ module.exports.Data = {
         this.data = this.opts.data
     },
     renew: function(data) {
+        // (this.opts.renew ||
+        //  this.parent && this.parent.onrenew ||
+        //  this.parent.parent && this.parent.parent.onrenew)(data)
         (this.opts.renew ||
-         this.parent && this.parent.onrenew ||
-         this.parent.parent && this.parent.parent.onrenew)(data)
+         this.parent && this.parent.onrenew)(data)
     },
     onrenew: function(data){ this.renew(data) } // override this
 };

@@ -49,6 +49,7 @@ import I from 'Block.Bridge'
   <script>
     this.mixin(Mixin.Data)
     this.s = this.data.value0
+    if (this.s == '->') this.s = '→'
     this.a = this.data.value1.value0
     this.b = this.data.value2.value0
   </script>

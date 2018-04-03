@@ -2,6 +2,7 @@
 
 
 $text-light: $white
+$text-light-gray:  $gray-1
 $text-gray:  $gray-2
 $text-dark:  $gray-4
 
@@ -116,10 +117,10 @@ editor
     // opacity: 0.4
 
   .clonable, .sortable
-    .ghost
+    >.ghost
       display: inline-flex
   .draggable, .droppable, .trash
-    .ghost
+    >.ghost
       display: none
 
 button.remove, button.add
@@ -148,6 +149,20 @@ statement
 
   &.ghost
     opacity: 0
+
+bind-stmt
+  @include flex-expr
+  flex-direction: column
+  >.sig
+    @include flex-expr
+    margin: 4px 0
+    font-size: 0
+    >bind-var
+      align-self: center
+      >.slot>.sample>.term.var, >highlight
+        border-radius: $expr-border-radius
+      hole
+        display: none
 
 bind
   @include flex-expr
@@ -289,12 +304,20 @@ expr, pattern
     border: $expr-border
     border-radius: $expr-border-radius
   &.outer.func
+    &.bracket
+      // @include right-border-radius(0)
     >.slot>.term
       @include right-border-radius(0)
       pointer-events: auto
-    &.factor:not(.left)
-      expr.right
+    &.factor:not(.left)>.slot>.term
+      >expr.right.bracket
         @include right-border-radius(0)
+      >expr.right:not(.bracket)
+        // @include right-border-radius(0)
+        >.slot>.term
+          @include right-border-radius(0)
+        >highlight
+          @include right-border-radius(0)
   &.factor.left
     >.slot>.term
       @include right-border-radius($expr-border-radius)
@@ -307,6 +330,13 @@ expr, pattern
   >highlight
     margin: -2px
     // display: none
+  >add-area
+    position: absolute
+    height: $token-font-size
+    right: 0
+    // margin-left: 2px
+    margin-top: -2px
+    opacity: 0
 
 pattern
   pointer-events: auto
@@ -349,6 +379,8 @@ hole
   pointer-events: auto
   border-right: $expr-border
   box-shadow: $hole-shadow
+  // padding: 2px 4px
+  // min-width: 10px
   &.left
     @include left-border-radius($expr-border-radius)
     border-left: $expr-border
@@ -359,6 +391,10 @@ hole
     @include right-border-radius($expr-border-radius)
     >highlight
       @include right-border-radius($expr-border-radius)
+    >.slot>hole-stud>.fill
+      @include right-border-radius($term-border-radius)
+  >.slot>type
+    display: none
   >.slot>type>.term
     color: $text-gray
     border: none
@@ -372,14 +408,54 @@ hole
     left: -2px
     top: calc(100% + 2px)
 
-expr-emp
-  pointer-events: auto
-  overflow: hidden
+  >.slot>hole-stud
+    // margin: 0 -3px
+    border: 0
+    margin: 0
+    background: transparent
+
+hole-stud
+  @include flex-expr
+  position: relative
+  border-style: solid
+  border-width: 2px
+  border-radius: 2px
+  box-shadow: $term-shadow
+  // margin: 3px
+  >.fill
+    @include flex-expr
+  &.outer>.fill
+    padding: 4px
+  >highlight
+    margin: -2px
+    border-radius: 2px
+
+expr-emp.term
+  // overflow: hidden
   >type
-    .term.type
-      border-color: $empty-border
-      background:   $empty-color
+    .term
+      border-color: $text-light-gray
+      background:   transparent
       color:        $text-gray
+      pointer-events: none
+  &:hover>button.remove
+    opacity: .5
+  >button.remove
+    position: absolute
+    top: -3px
+    left: -1px
+    pointer-events: auto
+    opacity: 0
+    &:hover
+      opacity: 1
+  >.area
+    // @include flex-expr
+    pointer-events: auto
+    position: absolute
+    left: 15%
+    top: 15%
+    width: 70%
+    height: 70%
 
 app-expr
   // height: 100%
@@ -657,7 +733,11 @@ sample
   @include flex-expr
   .sample
     box-shadow: $term-shadow
-
+  hole>.slot
+    >type
+      display: inline-flex
+    >hole-stud
+      display: none
   handle
     display: none
   input-field

@@ -14,6 +14,7 @@ import I from 'Block.Bridge'
 <editor>
   <nav class="navbar navbar-dark bg-dark">
     <a class="navbar-brand" href="#">Block.hs</a>
+    <button class='btn text-light' onclick={undo}>◀︎</button>
   </nav>
   <div class='tab sidebar'>
     Expr:
@@ -39,6 +40,18 @@ import I from 'Block.Bridge'
         this.main_module = I.typeChecks(this.prelude)(d)
         console.log('main', this.main_module);
         this.tags['main-module'].update({data: this.main_module, lib: this.prelude})
+        this.edit()
+    }
+
+    this.history = [this.main_module]
+    this.edit = () => {
+        this.history.push(this.main_module)
+    }
+    this.undo = () => {
+      if (this.history.length > 1) {
+          this.history.pop()
+          this.tags['main-module'].update({data: this.history[this.history.length - 1], lib: this.prelude})
+      }
     }
   </script>
 </editor>
@@ -62,12 +75,14 @@ import I from 'Block.Bridge'
         console.log('renew', i, d);
         const r = I.typeCheck(opts.lib)(this.data)(d)
         // console.log(r);
-        if (r.updated) this.renew(I.renewI(i)(r.s)(this.data))
-        else {
-            console.log('update');
-            this.data[i] = r.s
-            this.update()
-        }
+        // if (r.updated) this.renew(I.renewI(i)(r.s)(this.data))
+        // else {
+        //     console.log('update');
+        //     this.data[i] = r.s
+        //     this.update()
+        //     this.parent.edit()
+        // }
+        this.renew(I.renewI(i)(r.s)(this.data))
     }
   </script>
 </main-module>

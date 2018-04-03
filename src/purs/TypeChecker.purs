@@ -9,7 +9,7 @@ import Data.Foldable (or)
 import Data.Traversable (class Traversable, sequence)
 import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
-import Data.Array ((:), (\\), cons, snoc, unzip, uncons, foldr, head, toUnfoldable, elem, union, concatMap)
+import Data.Array ((:), (\\), cons, snoc, unzip, uncons, foldr, head, toUnfoldable, elem, union, concatMap, null)
 import Data.Array.NonEmpty as NE
 import Data.List as L
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
@@ -89,6 +89,10 @@ typeCheck :: Statements -> Statements -> Statement -> {s :: Statement, updated :
 typeCheck lib ss s =
     let s' = interpret (mconcat $ map envirs $ lib <> ss) $ inferStmt s
     in  {s: s', updated: (envirs s /= envirs s')}
+
+matchTypes :: Type -> Type -> Boolean
+matchTypes a b = let {infos: Infos i} = interpret Map.empty $ infer $ unify a b
+                 in  null i.errors
 
 inferStmt :: Statement -> Interpreter Statement
 inferStmt st = case st of

@@ -23,10 +23,13 @@ prelude :: Statements
 prelude = typeChecks []
     [BindStmt [Bind (epure $ Var "one") (epure $ Num 0)]] <>
     [BindStmt [Bind (idefault (spure $ arrow (tpure $ Id "Int") (tpure $ Id "Int")) (Var "negate")) eempty],
-     BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty],
+     -- BindStmt [Bind (idefault (spure (tpure $ TVar $ Named "a")) (Var "hoge")) eempty],
      BindStmt [Bind (idefault int2 (Oper (idefault int2 $ Var "+") Nothing Nothing)) eempty],
      BindStmt [Bind (idefault int2 (Oper (idefault int2 $ Var "-") Nothing Nothing)) eempty],
-     BindStmt [Bind (idefault int2bool (Oper (idefault int2bool $ Var "<") Nothing Nothing)) eempty]]
+     BindStmt [Bind (idefault int2 (Oper (idefault int2 $ Var "*") Nothing Nothing)) eempty],
+     BindStmt [Bind (idefault int2bool (Oper (idefault int2bool $ Var "==") Nothing Nothing)) eempty],
+     BindStmt [Bind (idefault int2bool (Oper (idefault int2bool $ Var "=<") Nothing Nothing)) eempty],
+     BindStmt [Bind (idefault int2bool (Oper (idefault int2bool $ Var ">=") Nothing Nothing)) eempty]]
 
 sampleExprs :: Array Expr
 sampleExprs = [idefault intS (Num 0),
@@ -91,13 +94,55 @@ bindStmtVar s = case s of
     BindStmt bs -> maybe eempty bindVar $ head bs
 
 assignExpr :: Expr -> Expr -> Expr
-assignExpr a@(Info x _ _) b@(Info y _ _) = case Tuple x y of
-    Tuple Empty _ -> b
-    _ -> b
+assignExpr a@(Info ae sx _) b@(Info be sy _) = case ae of
+    Empty | match a b -> b
+    Empty -> let n = length $ arrowToArray_ $ typeOf a
+                 m = length $ arrowToArray_ $ typeOf b
+             in fillExpr (m - n) b
+    _ -> case be of
+        Lambda as c | isEmpty c -> epure $ Lambda as a
+        Oper o Nothing e -> epure $ Oper o (Just a) e
+        Oper o d Nothing -> epure $ Oper o d (Just a)
+        Oper o (Just d) e | isEmpty d -> epure $ Oper o (Just a) e
+        Oper o d (Just e) | isEmpty e -> epure $ Oper o d (Just a)
+        If c d e | isEmpty c && match a c -> epure $ If a d e
+                 | isEmpty d -> epure $ If c a e
+                 | isEmpty e -> epure $ If c d a
+        _ | isArrow sy -> app b a
+        _ -> b
+    where
+        assign :: Expr -> Expr -> Expr
+        assign x@(Info ex _ _) y = case ex of
+            Empty | match x y -> y
+            Empty -> let n = length $ arrowToArray_ $ typeOf x
+                         m = length $ arrowToArray_ $ typeOf y
+                     in fillExpr (m - n) y
+            _ -> y
+
+        isArrow :: Scheme -> Boolean
+        isArrow (Forall _ t) = case t of
+            Info (TOper "->" _ _) _ _ -> true
+            _                         -> false
+        isEmpty :: Expr -> Boolean
+        isEmpty (Info Empty _ _) = true
+        isEmpty _                = false
+
+        match :: Expr -> Expr -> Boolean
+        match ax bx = typeOf ax `matchTypes` typeOf bx
 
 fillExprWith :: Int -> Expr -> Expr -> Expr
 fillExprWith 0 a f = app f a
-fillExprWith i a f = app (fillExprWith (i - 1) a f) eempty
+fillExprWith i a f = app (fillExprWith (i - 1) D.eempty f) a
+
+fillExpr :: Int -> Expr -> Expr
+fillExpr 0 a = a
+fillExpr i a =
+    let a'@(Info e sc i) = fillExpr (i - 1) a
+    in case e of
+        Oper o Nothing  Nothing -> Info (Oper o (Just D.eempty) Nothing) sc i
+        Oper o (Just x) Nothing -> Info (Oper o (Just x) (Just D.eempty)) sc i
+        Oper o Nothing (Just y) -> Info (Oper o (Just D.eempty) (Just y)) sc i
+        _ -> app a' D.eempty
 
 econs :: ExprA -> String
 econs e = case e of
@@ -159,6 +204,7 @@ deleteLambda i as b = lambdaC (fromMaybe as $ deleteAt i as) b
 
 renewFirsts  :: forall a b. Int -> a -> Array (Tuple a b) -> Array (Tuple a b)
 renewFirsts i a ts  = fromMaybe ts $ modifyAt i (\(Tuple _ b) -> Tuple a b) ts
+
 renewSeconds :: forall a b. Int -> b -> Array (Tuple a b) -> Array (Tuple a b)
 renewSeconds i b ts = fromMaybe ts $ modifyAt i (\(Tuple a _) -> Tuple a b) ts
 

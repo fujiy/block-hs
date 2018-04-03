@@ -27,7 +27,7 @@ import I from 'Block.Bridge'
 </div> -->
   <bind-var data={var} outer={args.length == 0}/>
   <pattern each={d, i in args} data={d} right={i == args.length - 1} renew={renewA(i)}/>
-  <add-area renew={addArg}/>
+  <add-area renew={addArg} name='expr'/>
 
   <script>
     this.mixin(Mixin.Data)
@@ -40,16 +40,6 @@ import I from 'Block.Bridge'
     this.addArg  = d => this.renew(I.toApp(this.var)(this.args.concat(d || I.pempty)))
   </script>
 </bind-left>
-
-<add-area onclick={add}>
-  <div ref='slot' class='slot droppable'></div>
-  <span class='token'>+</span>
-  <script>
-    this.mixin(Mixin.Data)
-    this.mixin(Mixin.Droppable)
-    this.add = () => this.renew(null)
-  </script>
-</add-area>
 
 <bind-var class={func: func, outer: opts.outer}>
   <div ref='slot' class='slot'>
@@ -96,9 +86,9 @@ import I from 'Block.Bridge'
 <expr class={left: opts.left, right: opts.right, outer: outer, func: func,
              bracket: bracket, factor: factor, hole: opts.hole}>
   <div ref='slot' class='slot draggable'>
-    <expr-emp    if={cons == 'emp'} data={scheme.value1}/>
+    <expr-emp    if={cons == 'emp'} data={scheme.value1} delete={opts.delete}/>
     <var-expr    if={cons == 'var'} data={expr}/>
-    <app-expr    if={cons == 'app'} data={expr} spine={spine} outer={outer && !func}/>
+    <app-expr    if={cons == 'app'} data={expr} spine={spine} outer={outer && !func} renewe={renewE}/>
     <expr-lambda if={cons == 'lam'} data={expr} renew={renewE}/>
     <expr-oper   if={cons == 'ope'} data={expr}/>
     <num-expr    if={cons == 'num'} data={expr}/>
@@ -106,8 +96,9 @@ import I from 'Block.Bridge'
     <expr-case   if={cons == 'cas'} data={expr}/>
     <expr-let    if={cons == 'let'} data={expr}/>
   </div>
-  <hole if={outer && func && !(factor && opts.left)} spine={spine}
+  <hole if={outer && func && !(factor && opts.left) && !empty} spine={spine} fill={parent.opts.fill}
         each={t, i in holes} data={t} right={i == holes.length - 1} renew={apply(i)}/>
+  <add-area if={cons != 'app' && cons != 'emp' && lcons == 'var'} renew={addArg} name='expr'/>
 
   <infos show={hover} data={infos}/>
   <type-info show={hover} data={scheme}/>
@@ -117,74 +108,47 @@ import I from 'Block.Bridge'
     this.mixin(Mixin.Data)
     this.mixin(Mixin.Selectable)
     this.mixin(Mixin.Draggable)
+    this.name = 'expr'
 
     this.expr    = this.data.value0
     this.cons    = I.econs(this.expr)
     this.scheme  = this.data.value1
     this.infos   = this.data.value2
-    this.holes   = I.arrowToArray(this.scheme.value1); this.holes.pop()
+    this.holes   = I.arrowToArray(this.scheme.value1);
+    this.last    = this.holes.pop()
+    this.lcons   = I.tcons(this.last.value0)
     this.oper    = this.cons == 'ope'
+    this.empty   = this.cons == 'emp'
     this.func    = this.holes.length > 0 && !(this.oper && this.holes.length <= 2)
     this.app     = this.cons == 'app' && !opts.spine
     this.factor  = this.cons == 'lam' || this.cons == 'ift' || this.cons == 'cas' || this.cons == 'let'
     // this.oper    = this.cons == 'ope'
-    this.bracket = (opts.bracket || opts.hole) && (this.func || this.app || this.oper)
+    this.bracket = (opts.bracket || opts.hole) && (this.func || this.app || this.oper) && !this.empty
                 || this.factor && (opts.left || opts.bracket || opts.hole)
     this.outer   = opts.outer || this.bracket || this.app
     const spineC = I.econs(I.appToArray(this.data)[0].value0)
     this.spine   = opts.spine || (spineC == 'lam' || spineC == 'ift' ? 'bra' : spineC)
 
-    this.name = 'expr'
-
     this.onrenew = d => this.renew(I.renewExpr(d)(this.data))
     this.renewE  = d => this.renew(d)
-    this.apply = i => d => {
-        console.log('apply', i, d);
-        console.log(I.fillExprWith(i)(d)(this.data));
-        this.renew(I.fillExprWith(i)(d)(this.data))
-    }
+    this.apply   = i => d => this.renew(I.fillExprWith(i)(d)(this.data))
+    this.addArg  = d => (opts.addarg || this.apply(0))(d || I.eempty)
 
     this.onremove = () => {
         console.log('remove');
         this.renew(I.eempty)
     }
-    this.ondrop = d => this.renew(I.assignExpr(this.data)(d))
+    this.ondrop = d => {
+      console.log('drop', d);
+      this.renew(I.assignExpr(this.data)(d))
+    }
   </script>
 </expr>
 
-<hole class='{opts.spine} {opts.left?"left":""} {opts.right?"right":""} {conpact?"conpact":""}'>
-  <div ref='slot' class='slot droppable'>
-    <type data={opts.data}/>
-  </div>
-
-  <type-info show={hover} data={scheme}/>
-  <highlight hover={hover}/>
-  <script>
-    this.mixin(Mixin.Data)
-    this.mixin(Mixin.Selectable)
-    if (opts.renew) this.mixin(Mixin.Droppable)
-
-    this.name = 'expr'
-    this.scheme  = I.spure(this.data)
-    this.conpact = opts.conpact == null ? true : opts.conpact
-
-    this.ondrop = d => this.renew(d)
-  </script>
-</hole>
-
-<handle>
-  <div class='grip'></div>
-  <button if={opts.remove} onclick={opts.remove} class='remove'>×</button>
-</handle>
-
-<highlight class={hover: opts.hover, error: error}>
-  <script>
-    this.error = opts.infos && opts.infos.errors && opts.infos.errors.length > 0
-  </script>
-</highlight>
-
 <expr-emp class='term emp'>
+  <button if={opts.delete} onclick={opts.delete} class='remove'>×</button>
   <type data={data}/>
+  <div class='area'></div>
   this.mixin(Mixin.Data)
 </expr-emp>
 
@@ -197,7 +161,7 @@ import I from 'Block.Bridge'
   <div class='left'>
     <span class='token'>λ</span>
     <pattern each={d, i in params} data={d} renew={renewA(i)}/>
-    <add-area renew={addArg}/>
+    <add-area renew={addArg} name='expr'/>
     <span class='token'>→</span>
   </div>
   <expr data={expr} hole={true} right={true}/>
@@ -214,12 +178,13 @@ import I from 'Block.Bridge'
 </expr-lambda>
 
 <app-expr class='term {opts.spine} {opts.outer?"outer":""}'>
-  <expr data={data.value0} spine={opts.spine} left={true} renew={renewL}/>
-  <expr data={data.value1} bracket={true} right={opts.outer} renew={renewR}/>
+  <expr data={data.value0} spine={opts.spine} left={true} renew={renewL} addarg={parent.addArg}/>
+  <expr data={data.value1} bracket={true} right={opts.outer} renew={renewR} delete={removeR} fill={opts.spine}/>
   <script>
     this.mixin(Mixin.Data)
-    this.renewL = d => this.renew(I.appC(d)(this.data.value1))
-    this.renewR = d => this.renew(I.appC(this.data.value0)(d))
+    this.renewL  = d => this.renew(I.appC(d)(this.data.value1))
+    this.renewR  = d => this.renew(I.appC(this.data.value0)(d))
+    this.removeR = () => this.opts.renewe(this.data.value0)
   </script>
 </app-expr>
 
@@ -395,6 +360,68 @@ import I from 'Block.Bridge'
     this.remove  = () => this.renew(null)
   </script>
 </var-pattern>
+
+// Parts -----------------------------------------------------------------------
+
+<hole class='{opts.spine} {opts.left?"left":""} {opts.right?"right":""} {conpact?"conpact":""}'>
+  <div ref='slot' class='slot droppable' onclick={opts.renew && add}>
+    <type data={opts.data}/>
+    <hole-stud data={opts.data} color={opts.spine} fill={opts.fill} outer={true}/>
+  </div>
+
+  <type-info show={hover} data={scheme}/>
+  <highlight hover={hover}/>
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Selectable)
+    if (opts.renew) this.mixin(Mixin.Droppable)
+    this.name = 'expr'
+    this.scheme  = I.spure(this.data)
+    this.conpact = opts.conpact == null ? true : opts.conpact
+
+    this.ondrop = d => this.renew(d)
+    this.add    = () => this.renew(I.eempty)
+  </script>
+</hole>
+
+<hole-stud class='{opts.color} {opts.outer?"outer":""}'>
+  <div class='fill {opts.fill}'>
+    <hole-stud each={d in args} data={d} color={parent.opts.color} fill={parent.opts.fill}/>
+  </div>
+  <type-info show={hover} data={scheme}/>
+  <highlight hover={hover}/>
+
+  <script>
+    this.mixin(Mixin.Data)
+    if (!opts.outer) this.mixin(Mixin.Selectable)
+    this.type = this.data.value0
+    this.scheme  = I.spure(this.data)
+    this.args = I.arrowToArray(this.data)
+    this.args.pop()
+  </script>
+</hole-stud>
+
+<handle>
+  <div class='grip'></div>
+  <button if={opts.remove} onclick={opts.remove} class='remove'>×</button>
+</handle>
+
+<add-area onclick={add}>
+  <div ref='slot' class='slot droppable'></div>
+  <span class='token'>+</span>
+  <script>
+    this.mixin(Mixin.Data)
+    this.mixin(Mixin.Droppable)
+    this.name = opts.name
+    this.add = () => this.renew(null)
+  </script>
+</add-area>
+
+<highlight class={hover: opts.hover, error: error}>
+  <script>
+    this.error = opts.infos && opts.infos.errors && opts.infos.errors.length > 0
+  </script>
+</highlight>
 
 <input-field>
   <input ref='input' type='text' value={data} onchange={onchange} oninput={oninput}/>
